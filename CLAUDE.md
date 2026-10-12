@@ -1,12 +1,12 @@
 # CLAUDE.md — calorie-tracker 协作规则（v2）
 
 会话开始必须加载并遵守。价格、基准分数、详细理由见 `docs/model-routing-reference.md`（按需读取，不要常驻）。
-适用模型：Sonnet 5.5（主脑）/ Haiku 5.5 / GLM 5.3 / Kimi K3，均经 OpenRouter 接入 Claude Desktop。
+适用模型：~anthropic/claude-sonnet-latest（主脑）/ ~anthropic/claude-haiku-latest / z-ai/glm-5.3，均经 OpenRouter 接入 Claude Desktop。
 
 ## 一、原则（先看这条）
 
 1. **默认单模型**：一个任务若只涉及 1–2 个文件、改动小于约 50 行，就在当前会话直接做完，**不要分派**。分派要重新交代背景、丢失缓存、多一轮审查，小任务里这些开销比省下的差价还大。
-2. **分派的触发条件**（满足任一才分派）：需要大量读代码/日志（→ Haiku 侦察）；多文件后端或构建改动（→ GLM）；需要看截图做视觉迭代（→ Kimi）；跨层改动合并后需要审查（→ Sonnet）。
+2. **分派的触发条件**（满足任一才分派）：需要大量读代码/日志（→ Haiku 侦察）；多文件后端或构建改动（→ GLM）；需要看截图做视觉迭代（→ Sonnet）；跨层改动合并后需要审查（→ Sonnet）。
 3. **能省 token 的第一杠杆是少读**：翻资料交给 Haiku，只回摘要。
 4. **派活必须限定读取范围**：简报里列出要读的具体文件或目录，禁止让子代理"自行浏览整个仓库"。Haiku 单次输入必须控制在 10 万 token 以内（OpenRouter 日志显示，不加限制的侦察请求输入已达 8 万左右，接近断崖线）。默认排除目录见第二节。
 
@@ -26,17 +26,17 @@
 
 | 任务 | 模型 | effort | 备注 |
 |---|---|---|---|
-| 理解需求、拆任务、写验收标准、最终审查 | Sonnet 5.5 | — | 编排与审查，不逐行写功能 |
-| 查代码/找定义/读日志/压缩长文档（只回摘要） | Haiku 5.5 | — | 用只读子代理（Explore 类型）；单次提示词必须 ≤10 万 token，超过则价格×5 |
-| lint/格式化/重命名/批量小改、commit message、README 同步 | Haiku 5.5 | — | 改完必须过测试 |
-| 后端改动、bug 修复、测试维护、构建脚本执行与排查 | GLM 5.3 | **默认 low**，复杂断言或 Gradle/JDK 排错用 high | 不要用默认的 max，会白烧推理 token |
-| 跨模块重构方案设计 | GLM 5.3 | max | 仅限方案，不顺手实现；方案由 Sonnet 审后再分派 |
-| 前端交互重构、UI 组件、对着截图/错误页/logcat 迭代 | Kimi K3 | — | 只派"少而重"的活，同一任务线保持上下文稳定以吃缓存 |
-| 超大范围仓库调研（读多写少） | Kimi K3 | — | 先试 Haiku 侦察，不够再升级 |
-| Chaquopy Java↔Python 边界 | GLM 5.3 | high | 先读「六、已知坑」 |
-| WebView 真机疑难杂症 | Kimi K3 | — | 需要截图/logcat 才用 Kimi；纯代码层面的原因归 GLM |
+| 理解需求、拆任务、写验收标准、最终审查 | ~anthropic/claude-sonnet-latest | — | 编排与审查，不逐行写功能 |
+| 查代码/找定义/读日志/压缩长文档（只回摘要） | ~anthropic/claude-haiku-latest | — | 用只读子代理（Explore 类型）；单次提示词必须 ≤10 万 token，超过则价格×5 |
+| lint/格式化/重命名/批量小改、commit message、README 同步 | ~anthropic/claude-haiku-latest | — | 改完必须过测试 |
+| 后端改动、bug 修复、测试维护、构建脚本执行与排查 | z-ai/glm-5.3 | **默认 low**，复杂断言或 Gradle/JDK 排错用 high | 不要用默认的 max，会白烧推理 token |
+| 跨模块重构方案设计 | z-ai/glm-5.3 | max | 仅限方案，不顺手实现；方案由 Sonnet 审后再分派 |
+| 前端交互重构、UI 组件、对着截图/错误页/logcat 迭代 | ~anthropic/claude-sonnet-latest | — | 只派"少而重"的活，同一任务线保持上下文稳定以吃缓存 |
+| 超大范围仓库调研（读多写少） | ~anthropic/claude-sonnet-latest | — | 先试 Haiku 侦察，不够再升级 |
+| Chaquopy Java↔Python 边界 | z-ai/glm-5.3 | high | 先读「六、已知坑」 |
+| WebView 真机疑难杂症 | ~anthropic/claude-sonnet-latest | — | 需要截图/logcat 才用 Sonnet；纯代码层面的原因归 GLM |
 
-**归属冲突的裁决**：看产出物——改 Python/Java/构建脚本归 GLM，改 HTML/CSS/JS 或需要读图归 Kimi。
+**归属冲突的裁决**：看产出物——改 Python/Java/构建脚本归 GLM，改 HTML/CSS/JS 或需要读图归 Sonnet。
 
 ## 四、如何分派（执行机制）
 
@@ -44,10 +44,10 @@
 
   | `model` 参数 | 实际执行模型 | 用途 |
   |---|---|---|
-  | `haiku` | Claude Haiku 5.5 | 侦察、摘要、批量小改 |
-  | `opus` | **Kimi K3**（不是 Claude Opus） | 前端、视觉迭代、大仓库调研 |
-  | `fable` | **GLM 5.3**（不是 Fable） | 后端、测试、构建、Chaquopy 排错 |
-  | `sonnet` | Claude Sonnet 5.5 | 编排、最终审查 |
+  | `haiku` | ~anthropic/claude-haiku-latest | 侦察、摘要、批量小改 |
+  | `opus` | **~anthropic/claude-sonnet-latest**（不是 Claude Opus） | 前端、视觉迭代、大仓库调研 |
+  | `fable` | **z-ai/glm-5.3**（不是 Fable） | 后端、测试、构建、Chaquopy 排错 |
+  | `sonnet` | ~anthropic/claude-sonnet-latest | 编排、最终审查 |
 
 - 派任务时只用上表别名，不要凭名字猜模型。子代理自报的身份**不可信**（测试中 `opus` 自报为 claude-opus-5-5、`fable` 自报为 claude-fable-5-1，均与实际不符），以 OpenRouter 日志为准。
 - 映射依赖 Claude Desktop 的模型映射配置。若映射被修改或日志显示路由不对，停止分派，回到降级规则。
@@ -57,7 +57,7 @@
 
 ## 五、验收与交付
 
-1. 改动后运行 `python -m unittest tests.test_e2e`：**全部通过，且用例数不得减少**（当前 24 项，写测试后以实际数为准并更新此处）。
+1. 改动后运行 `python -m unittest tests.test_e2e`：**全部通过，且用例数不得减少**（当前 26 项，写测试后以实际数为准并更新此处）。
 2. 改过 `backend/` 或 `frontend/` → `python .android-build/sync_app.py` → `node .android-build/build_apk.js assembleRelease` → `python .android-build/finalize_apk.py`。
 3. 多文件改动合并后，Sonnet 审查 diff（只审不重写）。**本目录目前不是 git 仓库，没有 diff 可审也无法回滚**——先 `git init` 并做一次基线提交（见 `.gitignore` 说明），否则多模型并行改动无法追溯。
 4. 涉及安卓壳的交付必须附「真机复测清单」：安装 → 首次启动 → 设置页填档案 → 测试连接 → 四类 AI 任务 → 报告页。在用户的真我 GT Neo5 上人工验证通过前，不得宣称完成。修复后的 0.1beta APK 至今未经真机复测。

@@ -5,7 +5,10 @@ const $ = (sel, root = document) => root.querySelector(sel);
 const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const fmt = (x, d = 0) => (x === null || x === undefined || x === "" ? "—" : Number(x).toFixed(d));
-const today = () => new Date().toISOString().slice(0, 10);
+const today = () => {
+  const d = new Date();  // 用本地日期；toISOString 是 UTC，中国时区 0–8 点会差一天
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+};
 
 const state = { config: null, draft: [], draftNotes: "", dayLoaded: null };
 
@@ -95,17 +98,17 @@ function draftRow(it, i) {
   const isAct = it.kind === "activity";
   const amount = isAct ? it.minutes : it.grams;
   return `<tr data-i="${i}">
-    <td><span class="badge ${it.kind}">${isAct ? "运动" : "饮食"}</span></td>
-    <td><input data-f="name" value="${esc(it.name)}"></td>
-    <td>${isAct ? "" : `<input data-f="meal" value="${esc(it.meal || "")}" size="4">`}</td>
-    <td><input data-f="${isAct ? "minutes" : "grams"}" type="number" step="0.1" value="${amount ?? ""}"></td>
-    <td><input data-f="kcal" type="number" step="0.1" value="${it.kcal ?? ""}"></td>
-    <td>${isAct ? "" : `<input data-f="protein_g" type="number" step="0.1" value="${it.protein_g ?? ""}">`}</td>
-    <td>${isAct ? "" : `<input data-f="carb_g" type="number" step="0.1" value="${it.carb_g ?? ""}">`}</td>
-    <td>${isAct ? "" : `<input data-f="fat_g" type="number" step="0.1" value="${it.fat_g ?? ""}">`}</td>
-    <td>${it.confidence ? `<span class="badge ${esc(it.confidence)}">${esc(it.confidence)}</span>` : ""}</td>
-    <td title="${esc(it.basis || "")}">${esc((it.basis || "").slice(0, 28))}</td>
-    <td><button class="small danger" data-del="${i}">移除</button></td>
+    <td data-label="类型"><span class="badge ${it.kind}">${isAct ? "运动" : "饮食"}</span></td>
+    <td data-label="名称"><input data-f="name" value="${esc(it.name)}"></td>
+    <td data-label="餐次">${isAct ? "" : `<input data-f="meal" value="${esc(it.meal || "")}" size="4">`}</td>
+    <td data-label="${isAct ? "分钟" : "克数"}"><input data-f="${isAct ? "minutes" : "grams"}" type="number" step="0.1" value="${amount ?? ""}"></td>
+    <td data-label="热量 kcal"><input data-f="kcal" type="number" step="0.1" value="${it.kcal ?? ""}"></td>
+    <td data-label="蛋白 g">${isAct ? "" : `<input data-f="protein_g" type="number" step="0.1" value="${it.protein_g ?? ""}">`}</td>
+    <td data-label="碳水 g">${isAct ? "" : `<input data-f="carb_g" type="number" step="0.1" value="${it.carb_g ?? ""}">`}</td>
+    <td data-label="脂肪 g">${isAct ? "" : `<input data-f="fat_g" type="number" step="0.1" value="${it.fat_g ?? ""}">`}</td>
+    <td data-label="置信度">${it.confidence ? `<span class="badge ${esc(it.confidence)}">${esc(it.confidence)}</span>` : ""}</td>
+    <td data-label="依据" title="${esc(it.basis || "")}">${esc((it.basis || "").slice(0, 28))}</td>
+    <td class="actions"><button class="small danger" data-del="${i}">移除</button></td>
   </tr>`;
 }
 
@@ -201,7 +204,7 @@ async function loadDay() {
     $("#dayWarn").innerHTML = (d.warnings || []).map((w) => `<p class="status err">${esc(w)}</p>`).join("");
     $("#dayBody").innerHTML = d.entries.length
       ? d.entries.map(entryRow).join("")
-      : `<tr><td colspan="10" class="hint">这一天还没有记录</td></tr>`;
+      : `<tr class="empty-row"><td colspan="10" class="hint">这一天还没有记录</td></tr>`;
   } catch (err) {
     toast(err.message, true);
   }
@@ -210,16 +213,16 @@ async function loadDay() {
 function entryRow(e) {
   const isAct = e.kind === "activity";
   return `<tr data-id="${e.id}">
-    <td><span class="badge ${e.kind}">${isAct ? "运动" : "饮食"}</span></td>
-    <td>${esc(e.meal || "")}</td>
-    <td><input data-f="name" value="${esc(e.name)}"></td>
-    <td class="num">${isAct ? fmt(e.minutes, 0) : fmt(e.grams, 0)}</td>
-    <td><input data-f="kcal" type="number" step="0.1" value="${e.kcal}" style="width:90px"></td>
-    <td class="num">${isAct ? "" : fmt(e.protein_g, 1)}</td>
-    <td class="num">${isAct ? "" : fmt(e.carb_g, 1)}</td>
-    <td class="num">${isAct ? "" : fmt(e.fat_g, 1)}</td>
-    <td><small>${esc(e.llm_name || "")}</small></td>
-    <td>
+    <td data-label="类型"><span class="badge ${e.kind}">${isAct ? "运动" : "饮食"}</span></td>
+    <td data-label="餐次">${esc(e.meal || "")}</td>
+    <td data-label="名称"><input data-f="name" value="${esc(e.name)}"></td>
+    <td class="num" data-label="${isAct ? "分钟" : "克数"}">${isAct ? fmt(e.minutes, 0) : fmt(e.grams, 0)}</td>
+    <td data-label="热量 kcal"><input class="kcal-in" data-f="kcal" type="number" step="0.1" value="${e.kcal}"></td>
+    <td class="num" data-label="蛋白 g">${isAct ? "" : fmt(e.protein_g, 1)}</td>
+    <td class="num" data-label="碳水 g">${isAct ? "" : fmt(e.carb_g, 1)}</td>
+    <td class="num" data-label="脂肪 g">${isAct ? "" : fmt(e.fat_g, 1)}</td>
+    <td data-label="来源"><small>${esc(e.llm_name || "")}</small></td>
+    <td class="actions">
       <button class="small" data-save="${e.id}">保存</button>
       <button class="small danger" data-remove="${e.id}">删除</button>
     </td>
@@ -331,9 +334,9 @@ async function loadProfile() {
     form.elements.effective_date.value = today();
     const { history } = await api("GET", "/api/profile/history");
     $("#profileHistory").innerHTML = history.map((h) => `<tr>
-        <td>${h.effective_date}</td><td>${fmt(h.data.weight_kg, 1)}</td><td>${fmt(h.data.bmr_kcal)}</td>
-        <td>${fmt(h.data.maintenance_kcal)}</td><td>${esc(h.data.activity_text || "")}</td><td><small>${esc(h.created_at)}</small></td>
-      </tr>`).join("") || `<tr><td colspan="6" class="hint">暂无</td></tr>`;
+        <td data-label="生效日期">${h.effective_date}</td><td data-label="体重 kg">${fmt(h.data.weight_kg, 1)}</td><td data-label="BMR">${fmt(h.data.bmr_kcal)}</td>
+        <td data-label="维持消耗">${fmt(h.data.maintenance_kcal)}</td><td data-label="活动描述">${esc(h.data.activity_text || "")}</td><td data-label="保存时间"><small>${esc(h.created_at)}</small></td>
+      </tr>`).join("") || `<tr class="empty-row"><td colspan="6" class="hint">暂无</td></tr>`;
   } catch (err) {
     toast(err.message, true);
   }
@@ -403,16 +406,16 @@ function renderLlmList(c) {
   const active = c.active_llm_id;
   $("#llmList").innerHTML = c.llm_profiles.length
     ? c.llm_profiles.map((p) => `<tr>
-        <td><b>${esc(p.name)}</b></td><td>${esc(p.protocol)}</td><td>${esc(p.model)}</td>
-        <td><small>${esc(p.base_url)}</small></td>
-        <td>${p.api_key_set ? esc(p.api_key_hint) : '<span class="pill bad">未设置</span>'}</td>
-        <td>${p.id === active ? '<span class="pill ok">默认</span>' : `<button class="small" data-activate="${p.id}">设为默认</button>`}</td>
-        <td>
+        <td data-label="名称"><b>${esc(p.name)}</b></td><td data-label="协议">${esc(p.protocol)}</td><td data-label="模型">${esc(p.model)}</td>
+        <td data-label="地址"><small>${esc(p.base_url)}</small></td>
+        <td data-label="Key">${p.api_key_set ? esc(p.api_key_hint) : '<span class="pill bad">未设置</span>'}</td>
+        <td data-label="默认">${p.id === active ? '<span class="pill ok">默认</span>' : `<button class="small" data-activate="${p.id}">设为默认</button>`}</td>
+        <td class="actions">
           <button class="small" data-test="${p.id}">测试连接</button>
           <button class="small" data-edit="${p.id}">编辑</button>
           <button class="small danger" data-delete="${p.id}">删除</button>
         </td></tr>`).join("")
-    : `<tr><td colspan="7" class="hint">还没有 LLM 档案。请在下方添加。</td></tr>`;
+    : `<tr class="empty-row"><td colspan="7" class="hint">还没有 LLM 档案。请在下方添加。</td></tr>`;
 }
 
 function renderTaskMap(c) {
@@ -433,8 +436,8 @@ function renderSearch(c) {
 function renderPrompts(c) {
   $("#promptList").innerHTML = c.tasks.map((t) => {
     const p = c.prompts[t.id];
-    return `<div class="prompt-block" data-task="${t.id}">
-      <h3>${esc(t.label)}</h3>
+    return `<details class="prompt-block" data-task="${t.id}">
+      <summary>${esc(t.label)}</summary>
       <div class="grid two">
         <label>系统提示词<textarea rows="5" data-f="system">${esc(p.system)}</textarea></label>
         <label>用户模板<textarea rows="5" data-f="user">${esc(p.user)}</textarea></label>
@@ -445,7 +448,7 @@ function renderPrompts(c) {
         <button class="primary small" data-save-prompt="${t.id}">保存此模板</button>
         <button class="small" data-reset-prompt="${t.id}">恢复默认</button>
       </div>
-    </div>`;
+    </details>`;
   }).join("");
 }
 
@@ -573,6 +576,39 @@ async function resetPrompt(task) {
   }
 }
 
+/* ================= 更新日志 ================= */
+async function fetchChangelog() {
+  try {
+    const res = await fetch("changelog.json", { cache: "no-cache" });
+    if (!res.ok) return null;
+    const cl = await res.json();
+    if (!cl || cl.version === undefined || !Array.isArray(cl.items)) return null;
+    return cl;
+  } catch {
+    return null;
+  }
+}
+
+function showChangelog(cl) {
+  $("#clTitle").textContent = `更新日志 v${cl.version}`;
+  $("#clDate").textContent = cl.date || "";
+  $("#clItems").innerHTML = cl.items.map((x) => `<li>${esc(x)}</li>`).join("");
+  $("#changelogModal").classList.remove("hidden");
+  showChangelog.current = cl;
+}
+
+function closeChangelog() {
+  $("#changelogModal").classList.add("hidden");
+  const cl = showChangelog.current;
+  if (cl) localStorage.setItem("ct.seenVersion", String(cl.version));
+}
+
+async function maybeShowChangelog() {
+  const cl = await fetchChangelog();
+  if (!cl) return;
+  if (localStorage.getItem("ct.seenVersion") !== String(cl.version)) showChangelog(cl);
+}
+
 /* ================= 初始化与事件绑定 ================= */
 function init() {
   const dateInputs = ["#recDate", "#dayDate", "#repDate"];
@@ -646,8 +682,15 @@ function init() {
     if (t.dataset.resetPrompt) resetPrompt(t.dataset.resetPrompt);
   });
 
+  $("#clClose").addEventListener("click", closeChangelog);
+  $("#changelogModal").addEventListener("click", (e) => { if (e.target === e.currentTarget) closeChangelog(); });
+  $("#btnChangelog").addEventListener("click", async () => {
+    const cl = await fetchChangelog();
+    if (cl) showChangelog(cl); else toast("暂无更新日志", true);
+  });
+
   renderDraft();
-  checkHealth().then((ok) => { if (ok) loadDay(); });
+  checkHealth().then((ok) => { if (ok) loadDay(); }).finally(maybeShowChangelog);
 }
 
 document.addEventListener("DOMContentLoaded", init);

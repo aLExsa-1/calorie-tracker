@@ -74,6 +74,18 @@ class E2E(unittest.TestCase):
         self.assertEqual(s, 200)
         self.assertTrue(body["ok"])
 
+    def test_health_version_is_0_2(self):
+        s, body = call(self.base, "GET", "/api/health")
+        self.assertEqual(s, 200)
+        self.assertEqual(body["version"], "0.2")
+
+    def test_changelog_json_served(self):
+        import json as _json
+        import urllib.request
+        with urllib.request.urlopen(self.base + "/changelog.json", timeout=5) as r:
+            data = _json.loads(r.read().decode("utf-8"))
+        self.assertEqual(data["version"], "0.2")
+        self.assertTrue(len(data["items"]) >= 1)
     def test_llm_profile_crud_masks_key(self):
         pid = self.add_llm("A")
         s, cfg = call(self.base, "GET", "/api/config")
