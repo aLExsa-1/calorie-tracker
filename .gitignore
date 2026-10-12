@@ -25,3 +25,6 @@ __pycache__/
 data/
 _v1_local_rules/
 tests/.data/
+
+# 电脑版发布包（由脚本生成，不入库）
+release/
