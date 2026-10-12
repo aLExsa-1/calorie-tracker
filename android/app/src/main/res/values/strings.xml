@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">热量管理</string>
+    <string name="starting">正在启动内置服务…</string>
+    <string name="starting_hint">首次启动需要初始化 Python 运行环境，请稍候</string>
+</resources>
