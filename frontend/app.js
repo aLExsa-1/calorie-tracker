@@ -604,7 +604,7 @@ function renderPrompts(c) {
   $("#promptList").innerHTML = c.tasks.map((task) => {
     const p = c.prompts[task.id];
     return `<details class="prompt-block" data-task="${task.id}">
-      <summary>${esc(task.label)}</summary>
+      <summary>${esc(I18N.DICT[I18N.getLang()]["task." + task.id] ? t("task." + task.id) : task.label)}</summary>
       <div class="grid two">
         <label>${t("prompt.system")}<textarea rows="5" data-f="system">${esc(p.system)}</textarea></label>
         <label>${t("prompt.user")}<textarea rows="5" data-f="user">${esc(p.user)}</textarea></label>
@@ -760,12 +760,22 @@ function changelogItems(cl) {
   return useEn ? cl.items_en : cl.items;
 }
 
+/* 历史版本：history 数组（新版在前）；缺失时回退为顶层最新版本 */
+function changelogVersions(cl) {
+  if (Array.isArray(cl.history) && cl.history.length) return cl.history;
+  return [{ version: cl.version, date: cl.date, items: cl.items, items_en: cl.items_en }];
+}
+
 function paintChangelog() {
   const cl = state.changelog;
   if (!cl) return;
   $("#clTitle").textContent = t("cl.titleV", { version: cl.version });
   $("#clDate").textContent = cl.date || "";
-  $("#clItems").innerHTML = changelogItems(cl).map((x) => `<li>${esc(x)}</li>`).join("");
+  $("#clItems").innerHTML = changelogVersions(cl).map((v) => `
+    <div class="cl-version">
+      <h3>v${esc(v.version)}${v.date ? ` <span class="hint">${esc(v.date)}</span>` : ""}</h3>
+      <ul class="bullets">${changelogItems(v).map((x) => `<li>${esc(x)}</li>`).join("")}</ul>
+    </div>`).join("");
 }
 
 function showChangelog(cl) {

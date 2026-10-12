@@ -4,10 +4,13 @@ import android.annotation.SuppressLint;
 import android.graphics.Color;
 import android.net.Uri;
 import android.net.http.SslError;
+import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.webkit.SslErrorHandler;
+import android.webkit.ValueCallback;
+import android.webkit.WebChromeClient;
 import android.webkit.WebResourceError;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebSettings;
@@ -41,8 +44,11 @@ public class MainActivity extends AppCompatActivity {
     private static final String TAG = "CalorieTracker";
     private static final int LOOPBACK_PORT = 8787;
 
+    private static final int FILE_CHOOSER_REQUEST = 1001;
+
     private WebView web;
     private TextView status;
+    private ValueCallback<Uri[]> filePathCallback;
     private volatile boolean serverReady = false;
     private volatile String startupError = null;
 
@@ -70,6 +76,36 @@ public class MainActivity extends AppCompatActivity {
         s.setTextZoom(100);
 
         web.setBackgroundColor(Color.parseColor("#0f1115"));
+        // 没有 WebChromeClient 时，<input type="file"> 点击无反应。这里把文件选择交给系统相册。
+        web.setWebChromeClient(new WebChromeClient() {
+            @Override
+            public boolean onShowFileChooser(WebView webView, ValueCallback<Uri[]> callback,
+                                             FileChooserParams params) {
+                if (filePathCallback != null) {
+                    filePathCallback.onReceiveValue(null);
+                }
+                filePathCallback = callback;
+                Intent intent;
+                try {
+                    intent = params.createIntent();
+                } catch (Exception e) {
+                    Log.e(TAG, "无法创建文件选择器", e);
+                    filePathCallback.onReceiveValue(null);
+                    filePathCallback = null;
+                    return false;
+                }
+                intent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, params.getMode() == FileChooserParams.MODE_OPEN_MULTIPLE);
+                try {
+                    startActivityForResult(intent, FILE_CHOOSER_REQUEST);
+                } catch (Exception e) {
+                    Log.e(TAG, "打开相册失败", e);
+                    filePathCallback.onReceiveValue(null);
+                    filePathCallback = null;
+                    return false;
+                }
+                return true;
+            }
+        });
         web.setWebViewClient(new WebViewClient() {
             @Override
             public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
@@ -228,6 +264,27 @@ public class MainActivity extends AppCompatActivity {
             cause = cause.getCause();
         }
         return sb.toString();
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == FILE_CHOOSER_REQUEST && filePathCallback != null) {
+            Uri[] results = null;
+            if (resultCode == RESULT_OK && data != null) {
+                if (data.getClipData() != null) {
+                    int n = data.getClipData().getItemCount();
+                    results = new Uri[n];
+                    for (int i = 0; i < n; i++) {
+                        results[i] = data.getClipData().getItemAt(i).getUri();
+                    }
+                } else if (data.getData() != null) {
+                    results = new Uri[]{data.getData()};
+                }
+            }
+            filePathCallback.onReceiveValue(results);
+            filePathCallback = null;
+        }
     }
 
     @Override
