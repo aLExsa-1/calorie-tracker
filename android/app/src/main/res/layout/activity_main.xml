@@ -2,7 +2,7 @@
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#0f1115">
+    android:background="#eef0e6">
 
     <WebView
         android:id="@+id/webview"
@@ -27,7 +27,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="18dp"
             android:text="@string/starting"
-            android:textColor="#c9d1d9"
+            android:textColor="#1f2a1f"
             android:textSize="15sp" />
 
         <TextView
@@ -35,7 +35,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="10dp"
             android:text="@string/starting_hint"
-            android:textColor="#8b949e"
+            android:textColor="#667063"
             android:textSize="12sp" />
     </LinearLayout>
 </FrameLayout>

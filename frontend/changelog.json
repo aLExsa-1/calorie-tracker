@@ -1,70 +1,106 @@
 {
-    "version":  "0.2.1",
-    "date":  "2026-10-13",
-    "items":  [
-                  "饮食记录支持上传食物图片，由 AI 识别后估算热量",
-                  "图片最多 4 张，每张不超过 5 MB，自动压缩后上传",
-                  "设置页新增语言切换：简体中文（默认）与 English",
-                  "英文界面覆盖全部页面，切换后立即生效",
-                  "更新日志弹窗支持中英文显示",
-                  "版本号更新为 0.2.1"
-              ],
-    "items_en":  [
-                     "Food logging now accepts photos; AI recognizes them to estimate calories",
-                     "Up to 4 images, 5 MB each, compressed before upload",
-                     "Language switch in Settings: Simplified Chinese (default) or English",
-                     "English UI covers all pages and switches instantly",
-                     "Changelog dialog shows both Chinese and English",
-                     "Version updated to 0.2.1"
-                 ],
-    "history":  [
-        {
-            "version":  "0.2.1",
-            "date":  "2026-10-13",
-            "items":  [
-                          "饮食记录支持上传食物图片，由 AI 识别后估算热量",
-                          "图片最多 4 张，每张不超过 5 MB，自动压缩后上传",
-                          "设置页新增语言切换：简体中文（默认）与 English",
-                          "英文界面覆盖全部页面，切换后立即生效",
-                          "更新日志弹窗支持中英文显示",
-                          "版本号更新为 0.2.1"
-                      ],
-            "items_en":  [
-                             "Food logging now accepts photos; AI recognizes them to estimate calories",
-                             "Up to 4 images, 5 MB each, compressed before upload",
-                             "Language switch in Settings: Simplified Chinese (default) or English",
-                             "English UI covers all pages and switches instantly",
-                             "Changelog dialog shows both Chinese and English",
-                             "Version updated to 0.2.1"
-                         ]
-        },
-        {
-            "version":  "0.2.0",
-            "date":  "2026-10-12",
-            "items":  [
-                          "全新应用图标：深色底配绿橙双环，象征摄入与消耗的平衡",
-                          "手机窄屏下表格改为卡片，不再横向滚动",
-                          "手机新增底部标签栏导航，桌面仍在顶部",
-                          "全新极简风格：浅色渐变背景、柔和阴影、统一圆角",
-                          "「后端地址」移入设置页底部「高级」折叠区",
-                          "设置页提示词模板改为折叠显示，页面更短",
-                          "每日页热量差更醒目，各项数据两列排布",
-                          "首次使用或升级后自动弹出更新日志，设置页可再看",
-                          "修复凌晨 0–8 点默认日期显示为前一天的问题",
-                          "版本号更新为 0.2.0"
-                      ],
-            "items_en":  [
-                             "New app icon: dark background with green and orange rings for intake vs. burn balance",
-                             "Narrow phone screens show cards instead of wide tables",
-                             "Bottom tab bar navigation on phones; desktop keeps the top bar",
-                             "New minimal style: light gradient background, soft shadows, consistent radius",
-                             "Backend address moved into the Advanced section at the bottom of Settings",
-                             "Prompt templates in Settings are collapsible, making the page shorter",
-                             "Daily balance is more prominent; metrics arranged in two columns",
-                             "Changelog pops up on first use or after upgrade; also viewable in Settings",
-                             "Fixed default date showing the previous day between 00:00 and 08:00",
-                             "Version updated to 0.2.0"
-                         ]
-        }
-    ]
+  "version": "0.3.0",
+  "date": "2026-10-13",
+  "items": [
+    "全新界面「森林奶油」：奶油底色、森林绿主色、石板蓝点缀，卡片更圆润",
+    "设置页新增「界面配色」，可切换森林奶油 / 海盐蓝 / 桑葚紫，立即生效并记住",
+    "每日页重做：大号热量差卡片，摄入与消耗并排，三大营养素分段条",
+    "每日明细按早餐 / 午餐 / 晚餐 / 加餐 / 运动分组，带图标与小计，可前后翻日期",
+    "记录页新增「饮食 / 运动」分段切换，草稿以卡片呈现，餐次改为下拉选择",
+    "身体数据页拆为「基础信息 / 日常与目标 / 代谢指标」，历史版本改为时间线",
+    "报告页分数加进度条；LLM 档案改为卡片，手机上更易操作",
+    "手机底部导航加图标，激活项为实心胶囊；安卓启动页与状态栏同步浅色",
+    "所有功能与数据保持不变，可直接覆盖安装升级",
+    "版本号更新为 0.3.0"
+  ],
+  "items_en": [
+    "All-new \"Forest Cream\" look: cream background, forest-green primary, slate-blue accents, rounder cards",
+    "New Color theme in Settings: Forest cream / Sea salt blue / Mulberry plum, applied instantly and remembered",
+    "Daily page redesigned: a large calorie-balance card, intake and burn side by side, and a macro bar",
+    "Daily entries grouped by breakfast / lunch / dinner / snack / exercise, with icons and subtotals; step through dates",
+    "Log page gains a Food / Exercise switch; drafts appear as cards and meal is now a dropdown",
+    "Body data split into Basics / Lifestyle & goal / Metabolism; history shown as a timeline",
+    "Report scores get progress bars; LLM profiles are cards, easier to use on phones",
+    "Bottom tab bar now has icons with a solid pill for the active tab; Android splash and status bar match the light theme",
+    "All features and data are unchanged; install over the previous version to upgrade",
+    "Version updated to 0.3.0"
+  ],
+  "history": [
+    {
+      "version": "0.3.0",
+      "date": "2026-10-13",
+      "items": [
+        "全新界面「森林奶油」：奶油底色、森林绿主色、石板蓝点缀，卡片更圆润",
+        "设置页新增「界面配色」，可切换森林奶油 / 海盐蓝 / 桑葚紫，立即生效并记住",
+        "每日页重做：大号热量差卡片，摄入与消耗并排，三大营养素分段条",
+        "每日明细按早餐 / 午餐 / 晚餐 / 加餐 / 运动分组，带图标与小计，可前后翻日期",
+        "记录页新增「饮食 / 运动」分段切换，草稿以卡片呈现，餐次改为下拉选择",
+        "身体数据页拆为「基础信息 / 日常与目标 / 代谢指标」，历史版本改为时间线",
+        "报告页分数加进度条；LLM 档案改为卡片，手机上更易操作",
+        "手机底部导航加图标，激活项为实心胶囊；安卓启动页与状态栏同步浅色",
+        "所有功能与数据保持不变，可直接覆盖安装升级",
+        "版本号更新为 0.3.0"
+      ],
+      "items_en": [
+        "All-new \"Forest Cream\" look: cream background, forest-green primary, slate-blue accents, rounder cards",
+        "New Color theme in Settings: Forest cream / Sea salt blue / Mulberry plum, applied instantly and remembered",
+        "Daily page redesigned: a large calorie-balance card, intake and burn side by side, and a macro bar",
+        "Daily entries grouped by breakfast / lunch / dinner / snack / exercise, with icons and subtotals; step through dates",
+        "Log page gains a Food / Exercise switch; drafts appear as cards and meal is now a dropdown",
+        "Body data split into Basics / Lifestyle & goal / Metabolism; history shown as a timeline",
+        "Report scores get progress bars; LLM profiles are cards, easier to use on phones",
+        "Bottom tab bar now has icons with a solid pill for the active tab; Android splash and status bar match the light theme",
+        "All features and data are unchanged; install over the previous version to upgrade",
+        "Version updated to 0.3.0"
+      ]
+    },
+    {
+      "version": "0.2.1",
+      "date": "2026-10-13",
+      "items": [
+        "饮食记录支持上传食物图片，由 AI 识别后估算热量",
+        "图片最多 4 张，每张不超过 5 MB，自动压缩后上传",
+        "设置页新增语言切换：简体中文（默认）与 English",
+        "英文界面覆盖全部页面，切换后立即生效",
+        "更新日志弹窗支持中英文显示",
+        "版本号更新为 0.2.1"
+      ],
+      "items_en": [
+        "Food logging now accepts photos; AI recognizes them to estimate calories",
+        "Up to 4 images, 5 MB each, compressed before upload",
+        "Language switch in Settings: Simplified Chinese (default) or English",
+        "English UI covers all pages and switches instantly",
+        "Changelog dialog shows both Chinese and English",
+        "Version updated to 0.2.1"
+      ]
+    },
+    {
+      "version": "0.2.0",
+      "date": "2026-10-12",
+      "items": [
+        "全新应用图标：深色底配绿橙双环，象征摄入与消耗的平衡",
+        "手机窄屏下表格改为卡片，不再横向滚动",
+        "手机新增底部标签栏导航，桌面仍在顶部",
+        "全新极简风格：浅色渐变背景、柔和阴影、统一圆角",
+        "「后端地址」移入设置页底部「高级」折叠区",
+        "设置页提示词模板改为折叠显示，页面更短",
+        "每日页热量差更醒目，各项数据两列排布",
+        "首次使用或升级后自动弹出更新日志，设置页可再看",
+        "修复凌晨 0–8 点默认日期显示为前一天的问题",
+        "版本号更新为 0.2.0"
+      ],
+      "items_en": [
+        "New app icon: dark background with green and orange rings for intake vs. burn balance",
+        "Narrow phone screens show cards instead of wide tables",
+        "Bottom tab bar navigation on phones; desktop keeps the top bar",
+        "New minimal style: light gradient background, soft shadows, consistent radius",
+        "Backend address moved into the Advanced section at the bottom of Settings",
+        "Prompt templates in Settings are collapsible, making the page shorter",
+        "Daily balance is more prominent; metrics arranged in two columns",
+        "Changelog pops up on first use or after upgrade; also viewable in Settings",
+        "Fixed default date showing the previous day between 00:00 and 08:00",
+        "Version updated to 0.2.0"
+      ]
+    }
+  ]
 }

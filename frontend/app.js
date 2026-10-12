@@ -163,6 +163,37 @@ async function withBusy(btn, fn) {
   }
 }
 
+/* 配色：三套浅色方案，仅存本机 localStorage；init 前 index.html 内联脚本已提前套用，避免闪色 */
+const THEMES = ["forest", "ocean", "plum"];
+function setTheme(name, persist = true) {
+  const theme = THEMES.includes(name) ? name : "forest";
+  document.documentElement.setAttribute("data-theme", theme);
+  if (persist) { try { localStorage.setItem("ct.theme", theme); } catch (_) { /* 隐私模式忽略 */ } }
+  $$("#themePicker [data-theme]").forEach((b) => b.setAttribute("aria-checked", String(b.dataset.theme === theme)));
+  const meta = $('meta[name="theme-color"]');
+  if (meta) meta.setAttribute("content", getComputedStyle(document.documentElement).getPropertyValue("--bg").trim());
+}
+
+/* 记录页分段：饮食 / 运动；两个面板只是显隐，输入内容不会丢 */
+function setSegment(seg) {
+  $$("[data-seg]").forEach((b) => {
+    const on = b.dataset.seg === seg;
+    b.classList.toggle("active", on);
+    b.setAttribute("aria-selected", String(on));
+  });
+  $("#paneFood").hidden = seg !== "food";
+  $("#paneAct").hidden = seg !== "activity";
+}
+
+/* 每日页前后翻一天（按本地日期计算，避免 toISOString 的时区偏差） */
+function shiftDay(delta) {
+  const cur = $("#dayDate").value || today();
+  const [y, m, d] = cur.split("-").map(Number);
+  const nd = new Date(y, m - 1, d + delta);
+  $("#dayDate").value = `${nd.getFullYear()}-${String(nd.getMonth() + 1).padStart(2, "0")}-${String(nd.getDate()).padStart(2, "0")}`;
+  loadDay();
+}
+
 function showTab(name) {
   $$("nav button").forEach((b) => b.classList.toggle("active", b.dataset.tab === name));
   $$(".tab").forEach((tab) => tab.classList.toggle("active", tab.id === "tab-" + name));
@@ -200,22 +231,47 @@ function renderHealth() {
 }
 
 /* ================= 记录 ================= */
+/* 图标：餐次 → 精灵 id；运动单独一个。图标只做装饰（aria-hidden），不影响文字与事件。 */
+const MEAL_ICONS = { "早餐": "i-breakfast", "午餐": "i-lunch", "晚餐": "i-dinner", "加餐": "i-snack" };
+function iconSvg(id) {
+  return `<svg class="ico" aria-hidden="true"><use href="#${id}"/></svg>`;
+}
+function entryIcon(e) {
+  const isAct = e.kind === "activity";
+  const id = isAct ? "i-activity" : (MEAL_ICONS[e.meal] || "i-plate");
+  return `<span class="ent-ico ${isAct ? "activity" : "food"}">${iconSvg(id)}</span>`;
+}
+
+function mealOptions(selected) {
+  const cur = selected || "";
+  const known = MEALS.some(([zh]) => zh === cur);
+  return `<option value=""${cur === "" ? " selected" : ""}>${t("meal.none")}</option>`
+    + MEALS.map(([zh, key]) => `<option value="${zh}"${zh === cur ? " selected" : ""}>${t(key)}</option>`).join("")
+    + (cur && !known ? `<option value="${esc(cur)}" selected>${esc(cur)}</option>` : "");
+}
+
 function draftRow(it, i) {
   const isAct = it.kind === "activity";
   const amount = isAct ? it.minutes : it.grams;
-  return `<tr data-i="${i}">
-    <td data-label="${t("th.type")}"><span class="badge ${it.kind}">${isAct ? t("kind.activity") : t("kind.food")}</span></td>
-    <td data-label="${t("th.name")}"><input data-f="name" value="${esc(it.name)}"></td>
-    <td data-label="${t("th.meal")}">${isAct ? "" : `<input data-f="meal" value="${esc(mealLabel(it.meal))}" size="4">`}</td>
-    <td data-label="${isAct ? t("th.minutes") : t("th.grams")}"><input data-f="${isAct ? "minutes" : "grams"}" type="number" step="0.1" value="${amount ?? ""}"></td>
-    <td data-label="${t("th.kcal")}"><input data-f="kcal" type="number" step="0.1" value="${it.kcal ?? ""}"></td>
-    <td data-label="${t("th.protein_g")}">${isAct ? "" : `<input data-f="protein_g" type="number" step="0.1" value="${it.protein_g ?? ""}">`}</td>
-    <td data-label="${t("th.carb_g")}">${isAct ? "" : `<input data-f="carb_g" type="number" step="0.1" value="${it.carb_g ?? ""}">`}</td>
-    <td data-label="${t("th.fat_g")}">${isAct ? "" : `<input data-f="fat_g" type="number" step="0.1" value="${it.fat_g ?? ""}">`}</td>
-    <td data-label="${t("th.conf")}">${it.confidence ? `<span class="badge ${esc(it.confidence)}">${esc(confLabel(it.confidence))}</span>` : ""}</td>
-    <td data-label="${t("th.basis")}" title="${esc(it.basis || "")}">${esc((it.basis || "").slice(0, 28))}</td>
-    <td class="actions"><button class="small danger" data-del="${i}">${t("btn.remove")}</button></td>
-  </tr>`;
+  const macro = (f, label) => `<label>${label}<input data-f="${f}" type="number" step="0.1" inputmode="decimal" value="${it[f] ?? ""}"></label>`;
+  return `<div class="entry draft" data-i="${i}">
+    ${entryIcon(it)}
+    <div class="ent-main">
+      <input class="ent-name" data-f="name" value="${esc(it.name)}" aria-label="${t("th.name")}">
+      <div class="ent-meta">
+        <span class="badge ${esc(it.kind)}">${isAct ? t("kind.activity") : t("kind.food")}</span>
+        ${it.confidence ? `<span class="badge ${esc(it.confidence)}">${t("th.conf")} ${esc(confLabel(it.confidence))}</span>` : ""}
+      </div>
+    </div>
+    <div class="ent-fields">
+      ${isAct ? "" : `<label>${t("th.meal")}<select data-f="meal">${mealOptions(it.meal)}</select></label>`}
+      <label>${isAct ? t("th.minutes") : t("th.grams")}<input data-f="${isAct ? "minutes" : "grams"}" type="number" step="0.1" inputmode="decimal" value="${amount ?? ""}"></label>
+      <label>${t("th.kcal")}<input data-f="kcal" type="number" step="0.1" inputmode="decimal" value="${it.kcal ?? ""}"></label>
+      ${isAct ? "" : macro("protein_g", t("th.protein_g")) + macro("carb_g", t("th.carb_g")) + macro("fat_g", t("th.fat_g"))}
+    </div>
+    ${it.basis ? `<div class="ent-basis">${t("th.basis")}：${esc(it.basis)}</div>` : ""}
+    <div class="ent-actions"><button type="button" class="small danger" data-del="${i}">${t("btn.remove")}</button></div>
+  </div>`;
 }
 
 function renderDraft() {
@@ -226,12 +282,13 @@ function renderDraft() {
 }
 
 function readDraftEdits() {
-  $$("#draftBody tr").forEach((tr) => {
-    const i = Number(tr.dataset.i);
+  $$("#draftBody .entry").forEach((row) => {
+    const i = Number(row.dataset.i);
     const it = state.draft[i];
     if (!it) return;
-    $$("input", tr).forEach((inp) => {
+    $$("input, select", row).forEach((inp) => {
       const f = inp.dataset.f;
+      if (!f) return;
       if (f === "minutes" || f === "grams") it[it.kind === "activity" ? "minutes" : "grams"] = numOrNull(inp.value);
       else if (f === "meal") it.meal = mealFromInput(inp.value);
       else if (f === "name") it[f] = inp.value.trim();
@@ -260,7 +317,7 @@ async function estimate(kind) {
       ? { text, date, meal, images: state.foodImages.map((im) => im.data) }
       : { text, date };
     const res = await withBusy(btn, () => api("POST", path, body));
-    state.draft.push(...res.items.map((it) => ({ ...it, meal: it.meal || meal || "" })));
+    state.draft.push(...res.items.map((it) => ({ ...it, meal: kind === "food" ? (it.meal || meal || "") : "" })));
     state.draftNotes = [res.notes, ...(res.warnings || [])].filter(Boolean).join(I18N.getLang() === "en" ? "; " : "；");
     renderDraft();
     const n = res.items.length;
@@ -307,48 +364,89 @@ async function loadDay() {
   }
 }
 
+/* 每日摘要：热量差大卡 + 摄入/消耗磁贴 + 宏量分段条。数值与 API 字段一一对应，不在前端重算。 */
+function sumCard(cls, label, value, unit, sub = "") {
+  return `<div class="sum-card ${cls}"><div class="sum-label">${label}</div>
+    <div class="sum-value">${value}${unit ? `<small>${unit}</small>` : ""}</div>${sub}</div>`;
+}
+
+function dayHero(d) {
+  const bal = d.balance;
+  if (bal === null || bal === undefined) {
+    return `<div class="sum-card sum-hero"><div class="sum-label">${t("sum.balance")}</div>
+      <div class="sum-value">—<small>kcal</small></div><span class="sum-state">${t("sum.noMaint")}</span></div>`;
+  }
+  const cls = bal < 0 ? "neg" : bal > 0 ? "pos" : "";
+  const stateText = bal < 0 ? t("sum.deficit") : bal > 0 ? t("sum.surplus") : t("sum.even");
+  const shown = bal > 0 ? `+${fmt(bal)}` : bal < 0 ? `−${fmt(Math.abs(bal))}` : fmt(bal);
+  return `<div class="sum-card sum-hero ${cls}"><div class="sum-label">${t("sum.balance")}</div>
+    <div class="sum-value">${shown}<small>kcal</small></div><span class="sum-state">${stateText}</span></div>`;
+}
+
+function macroCard(d) {
+  const p = Number(d.protein_g) || 0, c = Number(d.carb_g) || 0, f = Number(d.fat_g) || 0;
+  const bar = (p + c + f) > 0
+    ? `<i style="flex-grow:${p}"></i><i style="flex-grow:${c}"></i><i style="flex-grow:${f}"></i>` : "";
+  return `<div class="sum-card macro-card"><div class="sum-label">${t("sum.macros")}</div>
+    <div class="macro-bar" role="img" aria-label="${t("sum.macros")}">${bar}</div>
+    <div class="macro-legend">
+      <span style="--c:var(--m-protein)">${t("th.protein")} <b>${fmt(d.protein_g)}</b> g</span>
+      <span style="--c:var(--m-carb)">${t("th.carb")} <b>${fmt(d.carb_g)}</b> g</span>
+      <span style="--c:var(--m-fat)">${t("th.fat")} <b>${fmt(d.fat_g)}</b> g</span>
+    </div></div>`;
+}
+
 function renderDay() {
   const d = state.dayLoaded;
   if (!d) return;
-  const bal = d.balance;
-  const balCls = bal === null ? "" : bal < 0 ? "neg" : "pos";
-  $("#daySummary").innerHTML = [
-    kpi(t("kpi.intake"), fmt(d.intake)),
-    kpi(t("kpi.exercise"), fmt(d.exercise)),
-    kpi(t("kpi.maintenance"), fmt(d.maintenance_kcal)),
-    kpi(t("kpi.burn"), fmt(d.burn)),
-    kpi(t("kpi.balance"), fmt(bal), balCls),
-    kpi(t("kpi.macros"), `${fmt(d.protein_g)} / ${fmt(d.carb_g)} / ${fmt(d.fat_g)}`),
-  ].join("");
+  const burnSub = `<div class="sum-sub">${t("sum.exerciseBurn")} <b>${fmt(d.exercise)}</b><br>${t("sum.maintBurn")} <b>${fmt(d.maintenance_kcal)}</b></div>`;
+  $("#daySummary").innerHTML = dayHero(d)
+    + sumCard("", t("sum.intake"), fmt(d.intake), "kcal")
+    + sumCard("", t("sum.burn"), fmt(d.burn), "kcal", burnSub)
+    + macroCard(d);
   $("#dayWarn").innerHTML = (d.warnings || []).map((w) => `<p class="status err">${esc(w)}</p>`).join("");
-  $("#dayBody").innerHTML = d.entries.length
-    ? d.entries.map(entryRow).join("")
-    : `<tr class="empty-row"><td colspan="10" class="hint">${t("day.empty")}</td></tr>`;
+  $("#dayBody").innerHTML = d.entries.length ? dayGroups(d.entries) : `<div class="empty">${t("day.empty")}</div>`;
+}
+
+/* 明细按「早餐 / 午餐 / 晚餐 / 加餐 / 其它 / 运动」分组，组头显示小计 */
+function dayGroups(entries) {
+  const order = [...MEALS.map(([zh]) => zh), ""];
+  const groups = order.map((zh) => ({
+    key: zh, title: zh ? mealLabel(zh) : t("sum.otherMeal"),
+    list: entries.filter((e) => e.kind === "food" && (MEALS.some(([m]) => m === zh) ? e.meal === zh : !MEALS.some(([m]) => m === e.meal))),
+  }));
+  groups.push({ key: "act", title: t("kind.activity"), list: entries.filter((e) => e.kind === "activity") });
+  return groups.filter((g) => g.list.length).map((g) => {
+    const sum = g.list.reduce((s, e) => s + (Number(e.kcal) || 0), 0);
+    return `<div class="group"><div class="group-head"><span>${esc(g.title)}</span><b>${fmt(sum)} kcal</b></div>
+      <div class="entries">${g.list.map(entryRow).join("")}</div></div>`;
+  }).join("");
 }
 
 function entryRow(e) {
   const isAct = e.kind === "activity";
-  return `<tr data-id="${e.id}">
-    <td data-label="${t("th.type")}"><span class="badge ${e.kind}">${isAct ? t("kind.activity") : t("kind.food")}</span></td>
-    <td data-label="${t("th.meal")}">${esc(mealLabel(e.meal))}</td>
-    <td data-label="${t("th.name")}"><input data-f="name" value="${esc(e.name)}"></td>
-    <td class="num" data-label="${isAct ? t("th.minutes") : t("th.grams")}">${isAct ? fmt(e.minutes, 0) : fmt(e.grams, 0)}</td>
-    <td data-label="${t("th.kcal")}"><input class="kcal-in" data-f="kcal" type="number" step="0.1" value="${e.kcal}"></td>
-    <td class="num" data-label="${t("th.protein_g")}">${isAct ? "" : fmt(e.protein_g, 1)}</td>
-    <td class="num" data-label="${t("th.carb_g")}">${isAct ? "" : fmt(e.carb_g, 1)}</td>
-    <td class="num" data-label="${t("th.fat_g")}">${isAct ? "" : fmt(e.fat_g, 1)}</td>
-    <td data-label="${t("th.source")}"><small>${esc(e.llm_name || "")}</small></td>
-    <td class="actions">
-      <button class="small" data-save="${e.id}">${t("btn.save")}</button>
-      <button class="small danger" data-remove="${e.id}">${t("btn.delete")}</button>
-    </td>
-  </tr>`;
+  const amount = isAct ? (e.minutes != null ? `${fmt(e.minutes, 0)} ${t("unit.min")}` : "") : (e.grams != null ? `${fmt(e.grams, 0)} ${t("unit.g")}` : "");
+  const macros = isAct || (e.protein_g == null && e.carb_g == null && e.fat_g == null) ? ""
+    : `<span>${t("th.protein")} ${fmt(e.protein_g, 1)}</span><span>${t("th.carb")} ${fmt(e.carb_g, 1)}</span><span>${t("th.fat")} ${fmt(e.fat_g, 1)}</span>`;
+  return `<div class="entry" data-id="${e.id}">
+    ${entryIcon(e)}
+    <div class="ent-main">
+      <input class="ent-name" data-f="name" value="${esc(e.name)}" aria-label="${t("th.name")}">
+      <div class="ent-meta">${amount ? `<span>${amount}</span>` : ""}${macros}${e.llm_name ? `<span>${esc(e.llm_name)}</span>` : ""}</div>
+    </div>
+    <label class="ent-kcal"><input class="kcal-in" data-f="kcal" type="number" step="0.1" inputmode="decimal" value="${e.kcal ?? ""}" aria-label="${t("th.kcal")}">kcal</label>
+    <div class="ent-actions">
+      <button type="button" class="small" data-save="${e.id}">${t("btn.save")}</button>
+      <button type="button" class="small danger" data-remove="${e.id}">${t("btn.delete")}</button>
+    </div>
+  </div>`;
 }
 
-async function saveEntry(id, tr) {
+async function saveEntry(id, row) {
   const fields = {};
-  $$("input", tr).forEach((inp) => {
+  $$("input", row).forEach((inp) => {
     const f = inp.dataset.f;
+    if (!f) return;
     fields[f] = f === "name" ? inp.value.trim() : numOrNull(inp.value);
   });
   try {
@@ -397,10 +495,11 @@ function buildReportHtml(r) {
     </table></div>`;
   let analysis = `<p class="hint">${t("rep.notAnalyzed")}</p>`;
   if (a) {
+    const pct = (v) => Math.max(0, Math.min(100, Number(v) || 0));
     analysis = `<div class="scores">
-        <div class="score">${fmt(a.diet_score)}<small>${t("rep.scoreDiet")}</small></div>
-        <div class="score">${fmt(a.exercise_score)}<small>${t("rep.scoreExercise")}</small></div>
-        <div class="score">${esc(a.exercise_level || "—")}<small>${t("rep.scoreLevel")}</small></div>
+        <div class="score-tile"><div class="score">${fmt(a.diet_score)}<small>${t("rep.scoreDiet")}</small></div><div class="meter"><i style="width:${pct(a.diet_score)}%"></i></div></div>
+        <div class="score-tile"><div class="score">${fmt(a.exercise_score)}<small>${t("rep.scoreExercise")}</small></div><div class="meter"><i style="width:${pct(a.exercise_score)}%"></i></div></div>
+        <div class="score-tile"><div class="score">${esc(a.exercise_level || "—")}<small>${t("rep.scoreLevel")}</small></div></div>
       </div>
       <p>${esc(a.summary || "")}</p>
       ${listBullets(t("rep.dietComments"), a.diet_comments)}
@@ -482,10 +581,15 @@ async function loadProfile() {
 function renderProfileHistory() {
   const list = state.profileHistory;
   if (!list) return;
-  $("#profileHistory").innerHTML = list.map((h) => `<tr>
-        <td data-label="${t("th.effective")}">${h.effective_date}</td><td data-label="${t("th.weightKg")}">${fmt(h.data.weight_kg, 1)}</td><td data-label="${t("th.bmr")}">${fmt(h.data.bmr_kcal)}</td>
-        <td data-label="${t("th.maint")}">${fmt(h.data.maintenance_kcal)}</td><td data-label="${t("th.activityDesc")}">${esc(h.data.activity_text || "")}</td><td data-label="${t("th.savedAt")}"><small>${esc(h.created_at)}</small></td>
-      </tr>`).join("") || `<tr class="empty-row"><td colspan="6" class="hint">${t("common.none")}</td></tr>`;
+  $("#profileHistory").innerHTML = list.map((h) => `<div class="tl-item">
+        <div class="tl-head"><span class="tl-date">${esc(h.effective_date)}</span><span class="tl-saved">${t("th.savedAt")} ${esc(h.created_at)}</span></div>
+        <div class="tl-chips">
+          <span class="chip">${t("th.weightKg")} <b>${fmt(h.data.weight_kg, 1)}</b></span>
+          <span class="chip">${t("th.bmr")} <b>${fmt(h.data.bmr_kcal)}</b></span>
+          <span class="chip">${t("th.maint")} <b>${fmt(h.data.maintenance_kcal)}</b></span>
+        </div>
+        ${h.data.activity_text ? `<div class="tl-note">${esc(h.data.activity_text)}</div>` : ""}
+      </div>`).join("") || `<div class="empty">${t("common.none")}</div>`;
 }
 
 function profileBody() {
@@ -561,17 +665,16 @@ function renderLlmList(c) {
   if (!c) return;
   const active = c.active_llm_id;
   $("#llmList").innerHTML = c.llm_profiles.length
-    ? c.llm_profiles.map((p) => `<tr>
-        <td data-label="${t("th.name")}"><b>${esc(p.name)}</b></td><td data-label="${t("th.protocol")}">${esc(p.protocol)}</td><td data-label="${t("th.model")}">${esc(p.model)}</td>
-        <td data-label="${t("th.url")}"><small>${esc(p.base_url)}</small></td>
-        <td data-label="Key">${p.api_key_set ? esc(p.api_key_hint) : `<span class="pill bad">${t("llm.unset")}</span>`}</td>
-        <td data-label="${t("th.default")}">${p.id === active ? `<span class="pill ok">${t("llm.default")}</span>` : `<button class="small" data-activate="${p.id}">${t("btn.setDefault")}</button>`}</td>
-        <td class="actions">
-          <button class="small" data-test="${p.id}">${t("btn.test")}</button>
-          <button class="small" data-edit="${p.id}">${t("btn.edit")}</button>
-          <button class="small danger" data-delete="${p.id}">${t("btn.delete")}</button>
-        </td></tr>`).join("")
-    : `<tr class="empty-row"><td colspan="7" class="hint">${t("llm.none")}</td></tr>`;
+    ? c.llm_profiles.map((p) => `<div class="llm-card">
+        <div class="llm-top"><b>${esc(p.name)}</b>${p.id === active ? `<span class="pill ok">${t("llm.default")}</span>` : `<button type="button" class="small" data-activate="${p.id}">${t("btn.setDefault")}</button>`}</div>
+        <div class="llm-meta"><span>${esc(p.protocol)} · ${esc(p.model)}</span><span>Key ${p.api_key_set ? esc(p.api_key_hint) : `<span class="pill bad">${t("llm.unset")}</span>`}</span></div>
+        <div class="llm-meta"><small>${esc(p.base_url)}</small></div>
+        <div class="llm-actions">
+          <button type="button" class="small" data-test="${p.id}">${t("btn.test")}</button>
+          <button type="button" class="small" data-edit="${p.id}">${t("btn.edit")}</button>
+          <button type="button" class="small danger" data-delete="${p.id}">${t("btn.delete")}</button>
+        </div></div>`).join("")
+    : `<div class="empty">${t("llm.none")}</div>`;
 }
 
 function renderTaskMap(c) {
@@ -711,7 +814,7 @@ async function testSearch() {
   try {
     const r = await api("POST", "/api/search/test", { query: $("#searchTestQ").value.trim() });
     setBox("#searchTestResult", () => `<ul class="bullets">${r.results.map((x) =>
-      `<li><a href="${esc(x.url)}" target="_blank" rel="noopener">${esc(x.title)}</a>${I18N.getLang() === "en" ? ": " : "："}${esc(x.snippet)}</li>`).join("")}</ul>`, "ok", true);
+      `<li><a href="${esc(/^https?:\/\//i.test(x.url) ? x.url : "#")}" target="_blank" rel="noopener noreferrer">${esc(x.title)}</a>${I18N.getLang() === "en" ? ": " : "："}${esc(x.snippet)}</li>`).join("")}</ul>`, "ok", true);
   } catch (err) {
     setStatus("#searchTestResult", err.message, "err");
   }
@@ -831,6 +934,7 @@ function refreshLanguage() {
   renderHealth();
   renderDraft();
   renderFoodPreview();
+  setTheme(document.documentElement.getAttribute("data-theme"), false);
   renderDay();
   renderReportView();
   renderReportList();
@@ -848,6 +952,7 @@ function refreshLanguage() {
 
 /* ================= 初始化与事件绑定 ================= */
 function init() {
+  setTheme((() => { try { return localStorage.getItem("ct.theme"); } catch (_) { return null; } })(), false);
   I18N.applyI18n();
   $("#langSelect").value = I18N.getLang();
   $("#langSelect").addEventListener("change", (e) => {
@@ -884,19 +989,28 @@ function init() {
     renderDraft();
   });
   $("#draftBody").addEventListener("click", (e) => {
-    const i = e.target.dataset.del;
-    if (i === undefined) return;
+    const btn = e.target.closest("[data-del]");
+    if (!btn) return;
     readDraftEdits();
-    state.draft.splice(Number(i), 1);
+    state.draft.splice(Number(btn.dataset.del), 1);
     renderDraft();
   });
 
+  $$("[data-seg]").forEach((b) => b.addEventListener("click", () => setSegment(b.dataset.seg)));
+
   $("#dayDate").addEventListener("change", loadDay);
+  $("#dayPrev").addEventListener("click", () => shiftDay(-1));
+  $("#dayNext").addEventListener("click", () => shiftDay(1));
   $("#dayBody").addEventListener("click", (e) => {
-    const save = e.target.dataset.save;
-    const remove = e.target.dataset.remove;
-    if (save) saveEntry(save, e.target.closest("tr"));
-    if (remove) removeEntry(remove);
+    const btn = e.target.closest("[data-save],[data-remove]");
+    if (!btn) return;
+    if (btn.dataset.save) saveEntry(btn.dataset.save, btn.closest(".entry"));
+    if (btn.dataset.remove) removeEntry(btn.dataset.remove);
+  });
+
+  $("#themePicker").addEventListener("click", (e) => {
+    const sw = e.target.closest("[data-theme]");
+    if (sw) setTheme(sw.dataset.theme);
   });
 
   $("#btnWeek").addEventListener("click", (e) => generateReport("week", e.currentTarget));
@@ -919,7 +1033,8 @@ function init() {
   $("#llmForm").addEventListener("submit", saveLlm);
   $("#btnLlmReset").addEventListener("click", resetLlmForm);
   $("#llmList").addEventListener("click", (e) => {
-    const tgt = e.target;
+    const tgt = e.target.closest("button");
+    if (!tgt) return;
     if (tgt.dataset.activate) llmAction("activate", tgt.dataset.activate);
     if (tgt.dataset.delete) llmAction("delete", tgt.dataset.delete);
     if (tgt.dataset.edit) llmAction("edit", tgt.dataset.edit);
@@ -929,7 +1044,8 @@ function init() {
   $("#searchForm").addEventListener("submit", saveSearch);
   $("#btnSearchTest").addEventListener("click", testSearch);
   $("#promptList").addEventListener("click", (e) => {
-    const tgt = e.target;
+    const tgt = e.target.closest("button");
+    if (!tgt) return;
     if (tgt.dataset.savePrompt) savePrompt(tgt.dataset.savePrompt, tgt.closest(".prompt-block"));
     if (tgt.dataset.resetPrompt) resetPrompt(tgt.dataset.resetPrompt);
   });

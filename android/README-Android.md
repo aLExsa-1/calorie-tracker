@@ -1,4 +1,4 @@
-# 热量管理 —— Android 版（0.2.1）
+# 热量管理 —— Android 版（0.3.0）
 
 把 `calorie-tracker` 的 Python 后端与静态前端打包成一个**独立的安卓应用**：
 APK 内部自带 Python 运行时（Chaquopy 17.0 / CPython 3.14），启动时在手机本机
@@ -16,11 +16,11 @@ APK 内部自带 Python 运行时（Chaquopy 17.0 / CPython 3.14），启动时�
 | 系统要求 | Android 7.0（API 24）及以上，targetSdk 35 |
 | 签名 | release 签名（APK Signature Scheme v2），自建 keystore |
 
-`android/` 下另保留了历史 APK（`0.1beta`、`0.2`、`0.2.0`），仅供回溯，新安装请使用 0.2.1。
+`android/` 下另保留了历史 APK（`0.1beta`、`0.2`、`0.2.0`、`0.2.1`），仅供回溯，新安装请使用 0.3.0。
 
 ## 安装
 
-1. 把 `CalorieTracker-0.2.1-arm64.apk` 传到手机（微信/QQ/数据线/网盘均可）。
+1. 把 `CalorieTracker-0.3.0-arm64.apk` 传到手机（微信/QQ/数据线/网盘均可）。
 2. 在手机上点击安装；系统会提示「未知来源应用」，按提示允许该来源安装。
 3. 桌面出现「热量管理」图标，打开即可。
 
@@ -58,7 +58,18 @@ APK 内部自带 Python 运行时（Chaquopy 17.0 / CPython 3.14），启动时�
 
 ## 版本记录与真机反馈
 
-### 0.2.1（当前版本，真机运行成功）
+### 0.3.0（当前版本，待真机复测）
+
+应用内改动：界面全面重做为「森林奶油」风格并新增三套配色，详见 README 更新日志，后端与接口无改动。
+
+安卓壳改动：
+- 启动页 / WebView 背景由深色改为奶油色 #eef0e6；
+- 状态栏与导航栏改为浅色背景（windowLightStatusBar / windowLightNavigationBar）；
+- 强调色改为森林绿 #2f5d2c。
+
+> 真机反馈：待用户复测。
+
+### 0.2.1（真机运行成功）
 
 应用内改动（与电脑版一致）：
 - 饮食记录支持上传食物图片，由 AI 识别后估算热量（最多 4 张，每张 ≤ 5 MB）；

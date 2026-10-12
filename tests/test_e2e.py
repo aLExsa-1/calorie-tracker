@@ -74,17 +74,17 @@ class E2E(unittest.TestCase):
         self.assertEqual(s, 200)
         self.assertTrue(body["ok"])
 
-    def test_health_version_is_0_2_0(self):
+    def test_health_version_is_0_3_0(self):
         s, body = call(self.base, "GET", "/api/health")
         self.assertEqual(s, 200)
-        self.assertEqual(body["version"], "0.2.1")
+        self.assertEqual(body["version"], "0.3.0")
 
     def test_changelog_json_served(self):
         import json as _json
         import urllib.request
         with urllib.request.urlopen(self.base + "/changelog.json", timeout=5) as r:
             data = _json.loads(r.read().decode("utf-8"))
-        self.assertEqual(data["version"], "0.2.1")
+        self.assertEqual(data["version"], "0.3.0")
         self.assertTrue(len(data["items"]) >= 1)
     def test_llm_profile_crud_masks_key(self):
         pid = self.add_llm("A")
@@ -448,6 +448,78 @@ class E2E(unittest.TestCase):
         en_keys = set(key_re.findall(en_block))
         self.assertTrue(zh_keys)
         self.assertEqual(zh_keys, en_keys)
+
+    # ---------------- 前端结构契约（0.3.0 界面重做后固化，防止改 UI 误伤功能） ----------------
+    @staticmethod
+    def _front(name):
+        return (ROOT / "frontend" / name).read_text(encoding="utf-8")
+
+    def test_frontend_ids_used_by_js_exist_in_html(self):
+        import re
+        html, js = self._front("index.html"), self._front("app.js")
+        html_ids = set(re.findall(r'\bid="([^"]+)"', html))
+        used = set(re.findall(r'\$\(\s*"#([\w-]+)"', js)) | set(re.findall(r'setBox\(\s*"#([\w-]+)"', js)) \
+            | set(re.findall(r'setStatus\(\s*"#([\w-]+)"', js))
+        self.assertTrue(used)
+        self.assertEqual(sorted(used - html_ids), [], "app.js 引用了 index.html 中不存在的 id")
+
+    def test_frontend_tabs_and_forms_intact(self):
+        import re
+        html = self._front("index.html")
+        tabs = re.findall(r'data-tab="(\w+)"', html)
+        self.assertEqual(tabs, ["record", "day", "report", "profile", "settings"])
+        for tab in tabs:
+            self.assertIn(f'id="tab-{tab}"', html)
+        for name in ("sex", "age", "height_cm", "weight_kg", "activity_text", "goal_text", "bmr_kcal",
+                     "maintenance_kcal", "effective_date"):
+            self.assertIn(f'name="{name}"', html, f"身体数据表单缺少 {name}")
+        for name in ("id", "name", "protocol", "model", "base_url", "api_key", "temperature", "max_tokens",
+                     "json_mode", "extra_body"):
+            self.assertIn(f'name="{name}"', html, f"LLM 表单缺少 {name}")
+        for sel in ("apiBase", "btnChangelog", "changelogModal", "foodImages", "btnEstFood", "btnEstAct"):
+            self.assertIn(f'id="{sel}"', html)
+
+    def test_frontend_action_hooks_preserved(self):
+        js = self._front("app.js")
+        for hook in ("data-save=", "data-remove=", "data-del=", "data-edit=", "data-test=", "data-activate=",
+                     "data-delete=", "data-report=", "data-rm-img=", "data-save-prompt=", "data-reset-prompt=",
+                     "data-task="):
+            self.assertIn(hook, js, f"app.js 丢失事件钩子 {hook}")
+        # 事件委托必须用 closest，点到按钮内部元素也能触发
+        self.assertIn('closest("[data-save],[data-remove]")', js)
+        self.assertIn('closest("[data-del]")', js)
+
+    def test_frontend_hidden_attribute_and_theme_support(self):
+        css = self._front("style.css")
+        self.assertIn("[hidden] { display: none !important; }", css)
+        for theme in ("ocean", "plum"):
+            self.assertIn(f':root[data-theme="{theme}"]', css)
+        html = self._front("index.html")
+        for theme in ("forest", "ocean", "plum"):
+            self.assertIn(f'data-theme="{theme}"', html)
+        # 窄屏顶栏不能带 backdrop-filter，否则内部 position:fixed 的底栏会错位
+        narrow = css.split("@media (max-width: 780px)", 1)[1].split("}", 1)[0]
+        self.assertIn("backdrop-filter: none", narrow)
+
+    def test_changelog_has_030_in_history_zh_and_en(self):
+        import json as _json
+        data = _json.loads(self._front("changelog.json"))
+        self.assertEqual(data["version"], "0.3.0")
+        self.assertEqual(data["history"][0]["version"], "0.3.0")
+        for h in data["history"]:
+            self.assertTrue(h["items"] and h["items_en"], f"v{h['version']} 缺少中文或英文条目")
+        self.assertEqual(len(data["history"][0]["items"]), len(data["history"][0]["items_en"]))
+        self.assertEqual([h["version"] for h in data["history"]][:3], ["0.3.0", "0.2.1", "0.2.0"])
+
+    def test_i18n_keys_used_in_js_and_html_exist(self):
+        import re
+        src = self._front("i18n.js")
+        zh_block = src.split('"zh-CN": {', 1)[1].split('"en": {', 1)[0]
+        keys = set(re.findall(r'^\s*"([^"]+)":\s*"', zh_block, re.M))
+        # 只校验完整字面量键 t("a.b")/t("a.b", {...})；t("task." + id) 这类动态拼接不在此列
+        used = set(re.findall(r'\bt\(\s*"([\w.]+)"\s*[,)]', self._front("app.js")))
+        used |= set(re.findall(r'data-i18n(?:-html|-placeholder|-title)?="([\w.]+)"', self._front("index.html")))
+        self.assertEqual(sorted(k for k in used if k not in keys), [], "代码或页面引用了字典中不存在的文案键")
 
     def test_static_path_traversal_blocked(self):
         try:

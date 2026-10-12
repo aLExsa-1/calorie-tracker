@@ -75,7 +75,7 @@ public class MainActivity extends AppCompatActivity {
         s.setMixedContentMode(WebSettings.MIXED_CONTENT_COMPATIBILITY_MODE);
         s.setTextZoom(100);
 
-        web.setBackgroundColor(Color.parseColor("#0f1115"));
+        web.setBackgroundColor(Color.parseColor("#eef0e6"));
         // 没有 WebChromeClient 时，<input type="file"> 点击无反应。这里把文件选择交给系统相册。
         web.setWebChromeClient(new WebChromeClient() {
             @Override
@@ -235,10 +235,10 @@ public class MainActivity extends AppCompatActivity {
         status.setText("启动失败");
         String html = "<!doctype html><html lang=\"zh-CN\"><head><meta charset=\"utf-8\">"
                 + "<meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">"
-                + "<style>body{background:#0f1115;color:#e6e6e6;font-family:sans-serif;padding:24px;line-height:1.6}"
-                + "h1{font-size:18px;color:#ff6b6b}pre{white-space:pre-wrap;word-break:break-all;background:#171a21;"
-                + "padding:12px;border-radius:8px;font-size:12px;color:#c9d1d9}"
-                + ".hint{color:#8b949e;font-size:13px}</style></head><body>"
+                + "<style>body{background:#eef0e6;color:#1f2a1f;font-family:sans-serif;padding:24px;line-height:1.6}"
+                + "h1{font-size:18px;color:#c0462d}pre{white-space:pre-wrap;word-break:break-all;background:#fbfcf7;"
+                + "padding:12px;border-radius:8px;font-size:12px;color:#1f2a1f}"
+                + ".hint{color:#667063;font-size:13px}</style></head><body>"
                 + "<h1>无法启动内置后端</h1>"
                 + "<p class=\"hint\">应用界面已打开，但本地 Python 服务没有响应。可以把下面的信息反馈给开发者：</p>"
                 + "<pre>" + escape(detail) + "</pre>"

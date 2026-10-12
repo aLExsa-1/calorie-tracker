@@ -15,7 +15,7 @@ from .config import ConfigError
 from .engine import ApiError, Engine
 from .schemas import SchemaError
 
-VERSION = "0.2.1"
+VERSION = "0.3.0"
 WEB_DIR = Path(__file__).resolve().parent.parent / "frontend"
 
 
