@@ -419,6 +419,36 @@ class E2E(unittest.TestCase):
         with urllib.request.urlopen(self.base + "/app.js", timeout=10) as resp:
             self.assertIn("async function api", resp.read().decode("utf-8"))
 
+    def test_i18n_js_served(self):
+        # 国际化字典必须可被静态服务，且包含两种语言代码
+        with urllib.request.urlopen(self.base + "/i18n.js", timeout=10) as resp:
+            self.assertEqual(resp.status, 200)
+            js = resp.read().decode("utf-8")
+        self.assertIn("zh-CN", js)
+        self.assertIn('"en"', js)
+
+    def test_index_has_i18n_hooks_and_title(self):
+        # 首页应包含 data-i18n 标记，且默认文字与 <title> 仍为「热量管理」
+        with urllib.request.urlopen(self.base + "/", timeout=10) as resp:
+            html = resp.read().decode("utf-8")
+        self.assertIn("data-i18n", html)
+        self.assertIn("<title", html)
+        self.assertIn("热量管理", html)
+        index_src = (ROOT / "frontend" / "index.html").read_text(encoding="utf-8")
+        self.assertIn("热量管理", index_src)
+
+    def test_i18n_dict_keys_match(self):
+        # zh-CN 与 en 两个字典的 key 必须完全一致（按行解析 "key": "value" 形式）
+        import re
+        src = (ROOT / "frontend" / "i18n.js").read_text(encoding="utf-8")
+        zh_block = src.split('"zh-CN": {', 1)[1].split('"en": {', 1)[0]
+        en_block = src.split('"en": {', 1)[1]
+        key_re = re.compile(r'^\s*"([^"]+)":\s*"', re.M)
+        zh_keys = set(key_re.findall(zh_block))
+        en_keys = set(key_re.findall(en_block))
+        self.assertTrue(zh_keys)
+        self.assertEqual(zh_keys, en_keys)
+
     def test_static_path_traversal_blocked(self):
         try:
             with urllib.request.urlopen(self.base + "/..%2Fbackend%2Fconfig.py", timeout=10) as resp:
