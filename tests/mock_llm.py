@@ -13,6 +13,20 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, urlparse
 
 
+def _flatten(content):
+    """多模态 content（list）转文本；返回 (文本, 图片数)。"""
+    if isinstance(content, str):
+        return content, 0
+    texts, images = [], 0
+    for part in content or []:
+        if not isinstance(part, dict):
+            continue
+        if part.get("type") in ("image_url", "image"):
+            images += 1
+        elif part.get("type") == "text":
+            texts.append(part.get("text", ""))
+    return "\n".join(texts), images
+
 def _reply_for(system: str, user: str) -> str:
     if "饮食" in user or "食物" in system:
         return json.dumps({
@@ -90,7 +104,9 @@ def make_handler(state: MockState):
             if self.path.endswith("/chat/completions"):
                 msgs = body.get("messages", [])
                 system = next((m["content"] for m in msgs if m["role"] == "system"), "")
-                user = next((m["content"] for m in msgs if m["role"] == "user"), "")
+                user, n_img = _flatten(next((m["content"] for m in msgs if m["role"] == "user"), ""))
+                if n_img:
+                    state.requests[-1]["images"] = n_img
                 text = "这不是 JSON" if state.bad_json_next > 0 else _reply_for(system, user)
                 if state.bad_json_next > 0:
                     state.bad_json_next -= 1
@@ -98,7 +114,9 @@ def make_handler(state: MockState):
 
             if self.path.endswith("/messages"):
                 system = body.get("system", "")
-                user = body["messages"][0]["content"]
+                user, n_img = _flatten(body["messages"][0]["content"])
+                if n_img:
+                    state.requests[-1]["images"] = n_img
                 text = _reply_for(system, user)
                 return self._json(200, {"content": [{"type": "text", "text": text}]})
 

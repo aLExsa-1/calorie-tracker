@@ -213,3 +213,11 @@ details.advanced { margin-top: var(--sp-3); }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition: none !important; animation: none !important; scroll-behavior: auto !important; }
 }
+
+/* ---- 食物图片（饮食记录） ---- */
+.food-images { margin: 10px 0; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.btn-like { display: inline-block; padding: 8px 14px; border-radius: 10px; border: 1px solid #cbd5e1; background: #fff; cursor: pointer; font-size: 14px; }
+.btn-like:hover { background: #f1f5f9; }
+.image-preview { display: flex; flex-wrap: wrap; gap: 10px; width: 100%; }
+.image-preview .thumb { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.image-preview img { width: 96px; height: 96px; object-fit: cover; border-radius: 10px; border: 1px solid #e2e8f0; }

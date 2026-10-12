@@ -15,7 +15,7 @@ from .config import ConfigError
 from .engine import ApiError, Engine
 from .schemas import SchemaError
 
-VERSION = "0.2.0"
+VERSION = "0.2.1"
 WEB_DIR = Path(__file__).resolve().parent.parent / "frontend"
 
 
@@ -34,6 +34,41 @@ def _entry_id(text: str) -> int:
     except ValueError:
         raise ApiError(400, "记录 id 必须是整数")
 
+
+MAX_IMAGES = 4
+MAX_IMAGE_BYTES = 5 * 1024 * 1024  # 单张解码后 5 MB
+ALLOWED_MIME = ("image/jpeg", "image/png", "image/webp", "image/gif")
+
+
+def _images(value) -> list[dict]:
+    """校验前端提交的图片：data URL 或 {mime, data}。返回 [{mime, data}]（纯 base64）。"""
+    if value in (None, "", []):
+        return []
+    if not isinstance(value, list):
+        raise ApiError(400, "images 必须是数组")
+    if len(value) > MAX_IMAGES:
+        raise ApiError(400, f"最多上传 {MAX_IMAGES} 张图片")
+    out = []
+    for i, item in enumerate(value):
+        raw = item if isinstance(item, str) else str(item.get("data") or "") if isinstance(item, dict) else ""
+        mime = (item.get("mime") if isinstance(item, dict) else None) or ""
+        if raw.startswith("data:"):
+            head, _, raw = raw.partition(",")
+            mime = head[5:].split(";")[0] or mime
+        mime = str(mime).lower()
+        if mime not in ALLOWED_MIME:
+            raise ApiError(400, f"第 {i + 1} 张图片格式不支持（仅 jpg/png/webp/gif）")
+        import base64
+        try:
+            decoded = base64.b64decode(raw, validate=True)
+        except (ValueError, TypeError):
+            raise ApiError(400, f"第 {i + 1} 张图片不是合法 base64")
+        if not decoded:
+            raise ApiError(400, f"第 {i + 1} 张图片为空")
+        if len(decoded) > MAX_IMAGE_BYTES:
+            raise ApiError(400, f"第 {i + 1} 张图片超过 5 MB，请压缩后再上传")
+        out.append({"mime": mime, "data": raw})
+    return out
 
 def _report_or_404(store, rid: int) -> dict:
     report = store.get_report(rid)
@@ -67,7 +102,8 @@ def _routes(e: Engine):
          lambda m, q, b: (200, e.estimate_metabolism(_day(b.get("date"))))),
 
         ("POST", r"/api/estimate/food",
-         lambda m, q, b: (200, e.estimate_food(str(b.get("text") or ""), _day(b.get("date")), b.get("meal")))),
+         lambda m, q, b: (200, e.estimate_food(str(b.get("text") or ""), _day(b.get("date")), b.get("meal"),
+                                              images=_images(b.get("images"))))),
         ("POST", r"/api/estimate/activity",
          lambda m, q, b: (200, e.estimate_activity(str(b.get("text") or ""), _day(b.get("date"))))),
 

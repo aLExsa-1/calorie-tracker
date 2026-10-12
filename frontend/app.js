@@ -12,6 +12,53 @@ const today = () => {
 
 const state = { config: null, draft: [], draftNotes: "", dayLoaded: null };
 
+/* 食物图片：先在前端压缩到 1600px 以内再转 base64，减小请求体积 */
+const MAX_IMAGES = 4;
+const MAX_IMAGE_MB = 5;
+state.foodImages = [];  // [{ name, mime, data(dataURL) }]
+
+function readImage(file) {
+  return new Promise((resolve, reject) => {
+    if (!file.type.startsWith("image/")) return reject(new Error(`${file.name} 不是图片`));
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      const max = 1600;
+      const scale = Math.min(1, max / Math.max(img.width, img.height));
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.round(img.width * scale);
+      canvas.height = Math.round(img.height * scale);
+      canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
+      URL.revokeObjectURL(url);
+      const dataUrl = canvas.toDataURL("image/jpeg", 0.85);
+      resolve({ name: file.name, mime: "image/jpeg", data: dataUrl });
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error(`${file.name} 无法解码`)); };
+    img.src = url;
+  });
+}
+
+function renderFoodPreview() {
+  $("#foodPreview").innerHTML = state.foodImages.map((im, i) =>
+    `<div class="thumb"><img src="${im.data}" alt="${esc(im.name)}"><button type="button" class="small danger" data-rm-img="${i}">移除</button></div>`
+  ).join("");
+}
+
+async function onFoodFiles(e) {
+  const files = Array.from(e.target.files || []);
+  e.target.value = "";
+  for (const f of files) {
+    if (state.foodImages.length >= MAX_IMAGES) { toast(`最多 ${MAX_IMAGES} 张图片`, true); break; }
+    if (f.size > MAX_IMAGE_MB * 1024 * 1024) { toast(`${f.name} 超过 ${MAX_IMAGE_MB} MB`, true); continue; }
+    try {
+      state.foodImages.push(await readImage(f));
+    } catch (err) {
+      toast(err.message, true);
+    }
+  }
+  renderFoodPreview();
+}
+
 /* ---------------- API ---------------- */
 function apiBase() {
   const v = localStorage.getItem("ct.apiBase") || "";
@@ -144,18 +191,22 @@ async function estimate(kind) {
   const text = kind === "food" ? $("#foodText").value : $("#actText").value;
   const date = $("#recDate").value || today();
   const meal = $("#recMeal").value;
-  if (!text.trim()) return toast(kind === "food" ? "请先输入饮食描述" : "请先输入运动描述", true);
+  const hasImages = kind === "food" && state.foodImages.length > 0;
+  if (!text.trim() && !hasImages) return toast(kind === "food" ? "请先输入饮食描述或添加图片" : "请先输入运动描述", true);
   setStatus("#estStatus", "AI 正在估算（可能会联网搜索，请稍候）…", "busy");
   try {
     const path = kind === "food" ? "/api/estimate/food" : "/api/estimate/activity";
-    const body = kind === "food" ? { text, date, meal } : { text, date };
+    const body = kind === "food"
+      ? { text, date, meal, images: state.foodImages.map((im) => im.data) }
+      : { text, date };
     const res = await withBusy(btn, () => api("POST", path, body));
     state.draft.push(...res.items.map((it) => ({ ...it, meal: it.meal || meal || "" })));
     state.draftNotes = [res.notes, ...(res.warnings || [])].filter(Boolean).join("；");
     renderDraft();
     const extra = res.search_used ? "（已参考联网搜索）" : "";
     setStatus("#estStatus", `估算完成，共 ${res.items.length} 条${extra}，请核对后保存`, "ok");
-    text && (kind === "food" ? ($("#foodText").value = "") : ($("#actText").value = ""));
+    if (kind === "food") { $("#foodText").value = ""; state.foodImages = []; renderFoodPreview(); }
+    else { $("#actText").value = ""; }
   } catch (err) {
     setStatus("#estStatus", err.message, "err");
     if (err.detail && err.detail.raw) console.warn("LLM 原始输出：", err.detail.raw);
@@ -624,6 +675,13 @@ function init() {
   $$("nav button").forEach((b) => b.addEventListener("click", () => showTab(b.dataset.tab)));
 
   $("#btnEstFood").addEventListener("click", () => estimate("food"));
+  $("#foodImages").addEventListener("change", onFoodFiles);
+  $("#foodPreview").addEventListener("click", (e) => {
+    const i = e.target.dataset.rmImg;
+    if (i === undefined) return;
+    state.foodImages.splice(Number(i), 1);
+    renderFoodPreview();
+  });
   $("#btnEstAct").addEventListener("click", () => estimate("activity"));
   $("#btnSaveDraft").addEventListener("click", saveDraft);
   $("#btnClearDraft").addEventListener("click", () => {

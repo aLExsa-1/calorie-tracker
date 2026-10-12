@@ -77,14 +77,14 @@ class E2E(unittest.TestCase):
     def test_health_version_is_0_2_0(self):
         s, body = call(self.base, "GET", "/api/health")
         self.assertEqual(s, 200)
-        self.assertEqual(body["version"], "0.2.0")
+        self.assertEqual(body["version"], "0.2.1")
 
     def test_changelog_json_served(self):
         import json as _json
         import urllib.request
         with urllib.request.urlopen(self.base + "/changelog.json", timeout=5) as r:
             data = _json.loads(r.read().decode("utf-8"))
-        self.assertEqual(data["version"], "0.2.0")
+        self.assertEqual(data["version"], "0.2.1")
         self.assertTrue(len(data["items"]) >= 1)
     def test_llm_profile_crud_masks_key(self):
         pid = self.add_llm("A")
@@ -208,6 +208,76 @@ class E2E(unittest.TestCase):
             eng.estimate_food("米饭", date(2026, 9, 1), None)
         self.assertEqual(ctx.exception.status, 400)
 
+    # ---------------- 食物图片识别 ----------------
+    # 1x1 PNG
+    TINY_PNG = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=="
+
+    def test_food_image_openai_multimodal(self):
+        pid = self.add_llm("vision-openai")
+        call(self.base, "POST", f"/api/config/llm/{pid}/activate")
+        s, body = call(self.base, "POST", "/api/estimate/food", {
+            "text": "这是我的早餐", "date": "2026-09-10", "meal": "早餐",
+            "images": [f"data:image/png;base64,{self.TINY_PNG}"]})
+        self.assertEqual(s, 200, body)
+        self.assertEqual(body["items"][0]["name"], "米饭")
+        req = [r for r in self.mock.state.requests if r["kind"] == "llm"][-1]
+        self.assertEqual(req["images"], 1)
+        content = req["body"]["messages"][1]["content"]
+        img = next(p for p in content if p["type"] == "image_url")
+        self.assertTrue(img["image_url"]["url"].startswith("data:image/png;base64,"))
+        self.assertTrue(any(p.get("type") == "text" and "这是我的早餐" in p["text"] for p in content))
+
+    def test_food_image_anthropic_multimodal(self):
+        pid = self.add_llm("vision-anthropic", protocol="anthropic", model="claude-vision",
+                           base=self.mock.base, key="ant-vision-0001")
+        call(self.base, "POST", f"/api/config/llm/{pid}/activate")
+        self.mock.state.requests.clear()
+        s, body = call(self.base, "POST", "/api/estimate/food", {
+            "text": "", "date": "2026-09-10",
+            "images": [{"mime": "image/png", "data": self.TINY_PNG}]})
+        self.assertEqual(s, 200, body)
+        req = next(r for r in self.mock.state.requests if r["kind"] == "llm")
+        self.assertEqual(req["images"], 1)
+        blocks = req["body"]["messages"][0]["content"]
+        self.assertEqual(blocks[0]["type"], "image")
+        self.assertEqual(blocks[0]["source"], {"type": "base64", "media_type": "image/png", "data": self.TINY_PNG})
+        self.assertEqual(blocks[-1]["type"], "text")
+        call(self.base, "POST", f"/api/config/llm/{pid}/activate")
+
+    def test_food_image_validation(self):
+        pid = self.add_llm("vision-check")
+        call(self.base, "POST", f"/api/config/llm/{pid}/activate")
+        cases = [
+            ({"text": "x", "images": "not-a-list"}, "必须是数组"),
+            ({"text": "x", "images": [f"data:image/bmp;base64,{self.TINY_PNG}"]}, "格式不支持"),
+            ({"text": "x", "images": ["data:image/png;base64,!!!notbase64"]}, "不是合法 base64"),
+            ({"text": "x", "images": [f"data:image/png;base64,{self.TINY_PNG}"] * 5}, "最多上传 4 张"),
+            ({"text": "", "images": []}, "请输入饮食描述或上传食物图片"),
+        ]
+        for payload, expect in cases:
+            payload = {"date": "2026-09-10", **payload}
+            s, body = call(self.base, "POST", "/api/estimate/food", payload)
+            self.assertEqual(s, 400, (payload, body))
+            self.assertIn(expect, body["error"])
+
+    def test_food_image_oversize_rejected(self):
+        import base64
+        big = base64.b64encode(b"\x00" * (5 * 1024 * 1024 + 1)).decode("ascii")
+        s, body = call(self.base, "POST", "/api/estimate/food", {
+            "text": "x", "date": "2026-09-10", "images": [f"data:image/png;base64,{big}"]})
+        self.assertEqual(s, 400)
+        self.assertIn("超过 5 MB", body["error"])
+
+    def test_text_only_food_still_works(self):
+        # 不带 images 字段时行为与之前完全一致，且请求不含图片
+        pid = self.add_llm("text-only")
+        call(self.base, "POST", f"/api/config/llm/{pid}/activate")
+        self.mock.state.requests.clear()
+        s, body = call(self.base, "POST", "/api/estimate/food", {"text": "米饭", "date": "2026-09-10"})
+        self.assertEqual(s, 200, body)
+        req = next(r for r in self.mock.state.requests if r["kind"] == "llm")
+        self.assertIsInstance(req["body"]["messages"][1]["content"], str)
+        self.assertNotIn("images", req)
     # ---------------- 记录与每日 ----------------
     def _save_drafts(self, day="2026-09-02"):
         pid = self.add_llm("rec-llm")

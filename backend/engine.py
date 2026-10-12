@@ -55,7 +55,7 @@ class Engine:
         self.config = config
 
     # ================= AI 任务执行 =================
-    def run_task(self, task: str, variables: dict) -> tuple[dict, dict]:
+    def run_task(self, task: str, variables: dict, images: list | None = None) -> tuple[dict, dict]:
         prompt = self.config.prompt(task)
         try:
             profile = self.config.resolve_llm(task)
@@ -77,7 +77,7 @@ class Engine:
         user = render(prompt["user"], {**variables, "search": search_block})
         system = prompt["system"] + "\n\n输出要求：只输出一个 JSON 对象，不要输出其它文字。结构如下：\n" + OUTPUT_FORMAT[task]
         try:
-            text = call_llm(profile, system, user)
+            text = call_llm(profile, system, user, images=images)
         except LLMError as exc:
             raise ApiError(502, f"LLM 调用失败：{exc}")
         try:
@@ -88,7 +88,7 @@ class Engine:
             raise ApiError(422, f"LLM 输出不符合规则：{exc}", detail={"raw": text[:1500]})
 
         meta = {"llm": profile["name"], "model": profile["model"],
-                "search_used": bool(search_block), "warnings": warnings}
+                "search_used": bool(search_block), "warnings": warnings, "images": len(images or [])}
         return result, meta
 
     # ================= 身体数据 =================
@@ -139,14 +139,16 @@ class Engine:
         return {**result, **meta}
 
     # ================= AI 估算（草稿，不写库） =================
-    def estimate_food(self, text: str, day: date, meal: str | None) -> dict:
-        if not text.strip():
-            raise ApiError(400, "请输入饮食描述")
+    def estimate_food(self, text: str, day: date, meal: str | None, images: list | None = None) -> dict:
+        text = text.strip()
+        if not text and not images:
+            raise ApiError(400, "请输入饮食描述或上传食物图片")
+        images = images or []
         result, meta = self.run_task("food_estimate", {
-            "input": text.strip(),
+            "input": text or "（见图片）",
             "meal": meal or "未指定",
             "profile": json.dumps(self.profile_on(day), ensure_ascii=False),
-        })
+        }, images=images)
         items = [{**it, "kind": "food", "meal": meal or "", "raw_text": text.strip(),
                   "llm_name": meta["llm"]} for it in result["items"]]
         return {"items": items, "notes": result["notes"], **{k: meta[k] for k in ("llm", "search_used", "warnings")}}

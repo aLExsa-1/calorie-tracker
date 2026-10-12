@@ -3,19 +3,19 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>热量管理</title>
+  <title data-i18n="page.title">热量管理</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <header class="topbar">
-    <div class="brand">热量管理</div>
-    <span id="health" class="pill">未连接</span>
+    <div class="brand" data-i18n="brand">热量管理</div>
+    <span id="health" class="pill" data-i18n="health.offline">未连接</span>
     <nav>
-      <button data-tab="record" class="active">记录</button>
-      <button data-tab="day">每日</button>
-      <button data-tab="report">报告</button>
-      <button data-tab="profile">身体数据</button>
-      <button data-tab="settings">设置</button>
+      <button data-tab="record" class="active" data-i18n="nav.record">记录</button>
+      <button data-tab="day" data-i18n="nav.day">每日</button>
+      <button data-tab="report" data-i18n="nav.report">报告</button>
+      <button data-tab="profile" data-i18n="nav.profile">身体数据</button>
+      <button data-tab="settings" data-i18n="nav.settings">设置</button>
     </nav>
   </header>
 
@@ -25,42 +25,47 @@
     <!-- ============ 记录 ============ -->
     <section id="tab-record" class="tab active">
       <div class="card">
-        <h2>AI 估算并记录</h2>
-        <p class="hint">用自然语言描述即可，例如「早餐：米饭一碗、两个鸡蛋、一盒牛奶」。估算由你配置的 AI 完成，保存前可逐条修改。</p>
+        <h2 data-i18n="rec.h.ai">AI 估算并记录</h2>
+        <p class="hint" data-i18n="rec.hint">用自然语言描述即可，例如「早餐：米饭一碗、两个鸡蛋、一盒牛奶」。估算由你配置的 AI 完成，保存前可逐条修改。</p>
         <div class="grid two">
-          <label>日期 <input type="date" id="recDate"></label>
-          <label>餐次
+          <label><span data-i18n="rec.date">日期</span> <input type="date" id="recDate"></label>
+          <label><span data-i18n="rec.meal">餐次</span>
             <select id="recMeal">
-              <option value="">无</option><option>早餐</option><option>午餐</option>
-              <option>晚餐</option><option>加餐</option>
+              <option value="" data-i18n="meal.none">无</option><option value="早餐" data-i18n="meal.breakfast">早餐</option><option value="午餐" data-i18n="meal.lunch">午餐</option>
+              <option value="晚餐" data-i18n="meal.dinner">晚餐</option><option value="加餐" data-i18n="meal.snack">加餐</option>
             </select>
           </label>
         </div>
-        <h3>饮食</h3>
-        <textarea id="foodText" rows="2" placeholder="例如：米饭一碗、炒青菜半份、红烧肉100g"></textarea>
-        <div class="row"><button id="btnEstFood" class="primary">AI 估算饮食</button></div>
+        <h3 data-i18n="rec.h.food">饮食</h3>
+        <textarea id="foodText" rows="2" data-i18n-placeholder="rec.foodPh" placeholder="例如：米饭一碗、炒青菜半份、红烧肉100g（可只传图片）"></textarea>
+        <div class="food-images">
+          <label class="btn-like"><span data-i18n="rec.addImg">📷 添加食物图片</span><input id="foodImages" type="file" accept="image/*" multiple hidden></label>
+          <span class="hint" data-i18n="rec.imgHint">最多 4 张，每张不超过 5 MB；需要所选模型支持图片输入</span>
+          <div id="foodPreview" class="image-preview"></div>
+        </div>
+        <div class="row"><button id="btnEstFood" class="primary" data-i18n="btn.estFood">AI 估算饮食</button></div>
 
-        <h3>运动</h3>
-        <textarea id="actText" rows="2" placeholder="例如：快走40分钟、力量训练1小时"></textarea>
-        <div class="row"><button id="btnEstAct" class="primary">AI 估算运动</button></div>
+        <h3 data-i18n="rec.h.act">运动</h3>
+        <textarea id="actText" rows="2" data-i18n-placeholder="rec.actPh" placeholder="例如：快走40分钟、力量训练1小时"></textarea>
+        <div class="row"><button id="btnEstAct" class="primary" data-i18n="btn.estAct">AI 估算运动</button></div>
         <div id="estStatus" class="status"></div>
       </div>
 
       <div class="card" id="draftCard" hidden>
-        <h2>估算草稿（未保存）</h2>
+        <h2 data-i18n="draft.h">估算草稿（未保存）</h2>
         <div id="draftNotes" class="hint"></div>
         <div class="table-wrap">
           <table class="cards">
             <thead><tr>
-              <th>类型</th><th>名称</th><th>餐次</th><th>克数/分钟</th><th>热量 kcal</th>
-              <th>蛋白 g</th><th>碳水 g</th><th>脂肪 g</th><th>置信度</th><th>依据</th><th></th>
+              <th data-i18n="th.type">类型</th><th data-i18n="th.name">名称</th><th data-i18n="th.meal">餐次</th><th data-i18n="th.gramsMin">克数/分钟</th><th data-i18n="th.kcal">热量 kcal</th>
+              <th data-i18n="th.protein_g">蛋白 g</th><th data-i18n="th.carb_g">碳水 g</th><th data-i18n="th.fat_g">脂肪 g</th><th data-i18n="th.conf">置信度</th><th data-i18n="th.basis">依据</th><th></th>
             </tr></thead>
             <tbody id="draftBody"></tbody>
           </table>
         </div>
         <div class="row">
-          <button id="btnSaveDraft" class="primary">保存到记录</button>
-          <button id="btnClearDraft">清空草稿</button>
+          <button id="btnSaveDraft" class="primary" data-i18n="btn.saveToRecords">保存到记录</button>
+          <button id="btnClearDraft" data-i18n="btn.clearDraft">清空草稿</button>
         </div>
       </div>
     </section>
@@ -68,38 +73,38 @@
     <!-- ============ 每日 ============ -->
     <section id="tab-day" class="tab">
       <div class="card">
-        <h2>每日热量差</h2>
-        <label class="day-date">日期 <input type="date" id="dayDate"></label>
+        <h2 data-i18n="day.h">每日热量差</h2>
+        <label class="day-date"><span data-i18n="day.date">日期</span> <input type="date" id="dayDate"></label>
         <div id="daySummary" class="kpis"></div>
         <div id="dayWarn"></div>
         <div class="table-wrap">
           <table class="cards">
             <thead><tr>
-              <th>类型</th><th>餐次</th><th>名称</th><th>克数/分钟</th><th>热量 kcal</th>
-              <th>蛋白</th><th>碳水</th><th>脂肪</th><th>来源</th><th></th>
+              <th data-i18n="th.type">类型</th><th data-i18n="th.meal">餐次</th><th data-i18n="th.name">名称</th><th data-i18n="th.gramsMin">克数/分钟</th><th data-i18n="th.kcal">热量 kcal</th>
+              <th data-i18n="th.protein">蛋白</th><th data-i18n="th.carb">碳水</th><th data-i18n="th.fat">脂肪</th><th data-i18n="th.source">来源</th><th></th>
             </tr></thead>
             <tbody id="dayBody"></tbody>
           </table>
         </div>
-        <p class="hint">修改任一条的热量或名称后点击保存，热量差会自动重算。</p>
+        <p class="hint" data-i18n="day.hint">修改任一条的热量或名称后点击保存，热量差会自动重算。</p>
       </div>
     </section>
 
     <!-- ============ 报告 ============ -->
     <section id="tab-report" class="tab">
       <div class="card">
-        <h2>周 / 月报告</h2>
+        <h2 data-i18n="rep.h">周 / 月报告</h2>
         <div class="row wrap">
-          <label>日期（所在周或月）<input type="date" id="repDate"></label>
-          <label class="check"><input type="checkbox" id="repAnalyze" checked> 调用 AI 做分析</label>
-          <button id="btnWeek" class="primary">生成本周报告</button>
-          <button id="btnMonth" class="primary">生成本月报告</button>
+          <label><span data-i18n="rep.dateLabel">日期（所在周或月）</span><input type="date" id="repDate"></label>
+          <label class="check"><input type="checkbox" id="repAnalyze" checked> <span data-i18n="rep.analyze">调用 AI 做分析</span></label>
+          <button id="btnWeek" class="primary" data-i18n="btn.week">生成本周报告</button>
+          <button id="btnMonth" class="primary" data-i18n="btn.month">生成本月报告</button>
         </div>
         <div id="repStatus" class="status"></div>
       </div>
       <div id="reportView"></div>
       <div class="card">
-        <h2>历史报告</h2>
+        <h2 data-i18n="rep.h.history">历史报告</h2>
         <ul id="reportList" class="list"></ul>
       </div>
     </section>
@@ -107,38 +112,38 @@
     <!-- ============ 身体数据 ============ -->
     <section id="tab-profile" class="tab">
       <div class="card">
-        <h2>当前身体数据</h2>
-        <p class="hint">修改后从「生效日期」起使用，之前的历史记录和报告不会被改写。留空的字段不参与计算。</p>
+        <h2 data-i18n="prof.h.current">当前身体数据</h2>
+        <p class="hint" data-i18n="prof.hint">修改后从「生效日期」起使用，之前的历史记录和报告不会被改写。留空的字段不参与计算。</p>
         <form id="profileForm" class="grid three">
-          <label>性别
+          <label><span data-i18n="prof.sex">性别</span>
             <select name="sex">
-              <option value="">未填写</option><option value="male">男</option>
-              <option value="female">女</option><option value="other">其它</option>
+              <option value="" data-i18n="prof.sexUnset">未填写</option><option value="male" data-i18n="prof.male">男</option>
+              <option value="female" data-i18n="prof.female">女</option><option value="other" data-i18n="prof.other">其它</option>
             </select>
           </label>
-          <label>年龄 <input name="age" type="number" min="1" max="120"></label>
-          <label>身高 cm <input name="height_cm" type="number" step="0.1"></label>
-          <label>体重 kg <input name="weight_kg" type="number" step="0.1"></label>
-          <label class="wide">日常活动情况（文字描述，供 AI 参考）
-            <input name="activity_text" placeholder="例如：办公室久坐，每周跑两次步">
+          <label><span data-i18n="prof.age">年龄</span> <input name="age" type="number" min="1" max="120"></label>
+          <label><span data-i18n="prof.height">身高 cm</span> <input name="height_cm" type="number" step="0.1"></label>
+          <label><span data-i18n="prof.weight">体重 kg</span> <input name="weight_kg" type="number" step="0.1"></label>
+          <label class="wide"><span data-i18n="prof.activity">日常活动情况（文字描述，供 AI 参考）</span>
+            <input name="activity_text" data-i18n-placeholder="prof.activityPh" placeholder="例如：办公室久坐，每周跑两次步">
           </label>
-          <label class="wide">目标（文字描述）
-            <input name="goal_text" placeholder="例如：三个月减脂 5kg">
+          <label class="wide"><span data-i18n="prof.goal">目标（文字描述）</span>
+            <input name="goal_text" data-i18n-placeholder="prof.goalPh" placeholder="例如：三个月减脂 5kg">
           </label>
-          <label>基础代谢 BMR kcal <input name="bmr_kcal" type="number" step="1"></label>
-          <label>维持消耗 kcal/天 <input name="maintenance_kcal" type="number" step="1"></label>
-          <label>生效日期 <input name="effective_date" type="date"></label>
+          <label><span data-i18n="prof.bmr">基础代谢 BMR kcal</span> <input name="bmr_kcal" type="number" step="1"></label>
+          <label><span data-i18n="prof.maint">维持消耗 kcal/天</span> <input name="maintenance_kcal" type="number" step="1"></label>
+          <label><span data-i18n="prof.effective">生效日期</span> <input name="effective_date" type="date"></label>
           <div class="wide row">
-            <button type="submit" class="primary">保存</button>
-            <button type="button" id="btnEstMeta">让 AI 估算 BMR 与维持消耗</button>
+            <button type="submit" class="primary" data-i18n="btn.save">保存</button>
+            <button type="button" id="btnEstMeta" data-i18n="btn.estMeta">让 AI 估算 BMR 与维持消耗</button>
           </div>
         </form>
         <div id="metaResult" class="hint"></div>
       </div>
       <div class="card">
-        <h2>历史版本</h2>
+        <h2 data-i18n="prof.h.history">历史版本</h2>
         <div class="table-wrap"><table class="cards">
-          <thead><tr><th>生效日期</th><th>体重</th><th>BMR</th><th>维持消耗</th><th>活动描述</th><th>保存时间</th></tr></thead>
+          <thead><tr><th data-i18n="th.effective">生效日期</th><th data-i18n="th.weight">体重</th><th data-i18n="th.bmr">BMR</th><th data-i18n="th.maint">维持消耗</th><th data-i18n="th.activityDesc">活动描述</th><th data-i18n="th.savedAt">保存时间</th></tr></thead>
           <tbody id="profileHistory"></tbody>
         </table></div>
       </div>
@@ -147,85 +152,96 @@
     <!-- ============ 设置 ============ -->
     <section id="tab-settings" class="tab">
       <div class="card">
-        <h2>LLM 档案</h2>
-        <p class="hint">可配置多套模型，协议支持 OpenAI 兼容与 Anthropic。API Key 保存在后端本地，界面只显示末 4 位。</p>
+        <h2 data-i18n="lang.h">语言 / Language</h2>
+        <p class="hint" data-i18n="lang.hint">界面语言保存在本浏览器中，切换后立即生效。</p>
+        <label><span data-i18n="lang.label">界面语言</span>
+          <select id="langSelect">
+            <option value="zh-CN">简体中文</option>
+            <option value="en">English</option>
+          </select>
+        </label>
+      </div>
+
+      <div class="card">
+        <h2 data-i18n="llm.h">LLM 档案</h2>
+        <p class="hint" data-i18n="llm.hint">可配置多套模型，协议支持 OpenAI 兼容与 Anthropic。API Key 保存在后端本地，界面只显示末 4 位。</p>
         <div class="table-wrap"><table class="cards">
-          <thead><tr><th>名称</th><th>协议</th><th>模型</th><th>地址</th><th>Key</th><th>默认</th><th></th></tr></thead>
+          <thead><tr><th data-i18n="th.name">名称</th><th data-i18n="th.protocol">协议</th><th data-i18n="th.model">模型</th><th data-i18n="th.url">地址</th><th>Key</th><th data-i18n="th.default">默认</th><th></th></tr></thead>
           <tbody id="llmList"></tbody>
         </table></div>
-        <h3 id="llmFormTitle">新增档案</h3>
+        <h3 id="llmFormTitle" data-i18n="llm.formNew">新增档案</h3>
         <form id="llmForm" class="grid three">
           <input type="hidden" name="id">
-          <label>名称 <input name="name" required placeholder="例如：DeepSeek"></label>
-          <label>协议
+          <label><span data-i18n="llm.fName">名称</span> <input name="name" required data-i18n-placeholder="llm.namePh" placeholder="例如：DeepSeek"></label>
+          <label><span data-i18n="llm.protocol">协议</span>
             <select name="protocol">
-              <option value="openai">OpenAI 兼容</option>
+              <option value="openai" data-i18n="llm.optOpenAI">OpenAI 兼容</option>
               <option value="anthropic">Anthropic</option>
             </select>
           </label>
-          <label>模型 <input name="model" required placeholder="例如 deepseek-chat"></label>
-          <label class="wide">接口地址
-            <span class="field-hint">OpenAI 兼容示例：https://api.deepseek.com/v1<br>Anthropic 示例：https://api.anthropic.com</span>
+          <label><span data-i18n="llm.model">模型</span> <input name="model" required data-i18n-placeholder="llm.modelPh" placeholder="例如 deepseek-chat"></label>
+          <label class="wide"><span data-i18n="llm.baseUrl">接口地址</span>
+            <span class="field-hint" data-i18n-html="llm.urlHint">OpenAI 兼容示例：https://api.deepseek.com/v1<br>Anthropic 示例：https://api.anthropic.com</span>
             <input name="base_url" required placeholder="https://api.deepseek.com/v1">
           </label>
-          <label>API Key <input name="api_key" type="password" placeholder="编辑时留空则保持不变"></label>
+          <label><span data-i18n="llm.apiKey">API Key</span> <input name="api_key" type="password" data-i18n-placeholder="common.keepKeyPh" placeholder="编辑时留空则保持不变"></label>
           <label>temperature <input name="temperature" type="number" step="0.1" min="0" max="2" value="0.2"></label>
           <label>max_tokens <input name="max_tokens" type="number" min="256" max="64000" value="4096"></label>
-          <label class="check"><input name="json_mode" type="checkbox" checked> OpenAI 使用 JSON 模式</label>
-          <label class="wide">额外请求参数 extra_body（JSON 对象，可选）
-            <textarea name="extra_body" rows="3" placeholder='例如 Anthropic 原生联网搜索：{"tools":[{"type":"web_search_20250305","name":"web_search","max_uses":3}]}'></textarea>
+          <label class="check"><input name="json_mode" type="checkbox" checked> <span data-i18n="llm.json">OpenAI 使用 JSON 模式</span></label>
+          <label class="wide"><span data-i18n="llm.extra">额外请求参数 extra_body（JSON 对象，可选）</span>
+            <textarea name="extra_body" rows="3" data-i18n-placeholder="llm.extraPh" placeholder='例如 Anthropic 原生联网搜索：{"tools":[{"type":"web_search_20250305","name":"web_search","max_uses":3}]}'></textarea>
           </label>
           <div class="wide row">
-            <button type="submit" class="primary">保存档案</button>
-            <button type="button" id="btnLlmReset">清空表单</button>
+            <button type="submit" class="primary" data-i18n="btn.saveLlm">保存档案</button>
+            <button type="button" id="btnLlmReset" data-i18n="btn.resetForm">清空表单</button>
           </div>
         </form>
         <div id="llmTestResult" class="status"></div>
       </div>
 
       <div class="card">
-        <h2>任务使用的模型</h2>
-        <p class="hint">未单独指定的任务使用默认档案。可以让饮食估算用便宜快速的模型，报告分析用更强的模型。</p>
+        <h2 data-i18n="task.h">任务使用的模型</h2>
+        <p class="hint" data-i18n="task.hint">未单独指定的任务使用默认档案。可以让饮食估算用便宜快速的模型，报告分析用更强的模型。</p>
         <div id="taskMap" class="grid two"></div>
-        <div class="row"><button id="btnSaveTaskMap" class="primary">保存任务映射</button></div>
+        <div class="row"><button id="btnSaveTaskMap" class="primary" data-i18n="btn.saveTaskMap">保存任务映射</button></div>
       </div>
 
       <div class="card">
-        <h2>联网搜索</h2>
-        <p class="hint">搜索结果会拼进提示词，供 AI 参考。也可以不用程序搜索，而是在 LLM 的额外参数里启用模型自带的搜索工具。</p>
+        <h2 data-i18n="search.h">联网搜索</h2>
+        <p class="hint" data-i18n="search.hint">搜索结果会拼进提示词，供 AI 参考。也可以不用程序搜索，而是在 LLM 的额外参数里启用模型自带的搜索工具。</p>
         <form id="searchForm" class="grid three">
-          <label>搜索服务
+          <label><span data-i18n="search.provider">搜索服务</span>
             <select name="provider">
-              <option value="none">不启用</option>
-              <option value="searxng">SearXNG（自建）</option>
+              <option value="none" data-i18n="search.none">不启用</option>
+              <option value="searxng" data-i18n="search.searxng">SearXNG（自建）</option>
               <option value="tavily">Tavily</option>
               <option value="brave">Brave Search</option>
             </select>
           </label>
-          <label>服务地址（SearXNG 必填）<input name="base_url" placeholder="http://127.0.0.1:8080"></label>
-          <label>API Key（Tavily/Brave）<input name="api_key" type="password" placeholder="编辑时留空则保持不变"></label>
+          <label><span data-i18n="search.baseUrl">服务地址（SearXNG 必填）</span> <input name="base_url" placeholder="http://127.0.0.1:8080"></label>
+          <label><span data-i18n="search.apiKey">API Key（Tavily/Brave）</span> <input name="api_key" type="password" data-i18n-placeholder="common.keepKeyPh" placeholder="编辑时留空则保持不变"></label>
           <div class="wide row">
-            <button type="submit" class="primary">保存搜索设置</button>
-            <input id="searchTestQ" class="grow" placeholder="测试查询，例如 鸡蛋 热量 每100克">
-            <button type="button" id="btnSearchTest">测试搜索</button>
+            <button type="submit" class="primary" data-i18n="btn.saveSearch">保存搜索设置</button>
+            <input id="searchTestQ" class="grow" data-i18n-placeholder="search.testPh" placeholder="测试查询，例如 鸡蛋 热量 每100克">
+            <button type="button" id="btnSearchTest" data-i18n="btn.testSearch">测试搜索</button>
           </div>
         </form>
         <div id="searchTestResult" class="status"></div>
       </div>
 
       <div class="card">
-        <h2>提示词模板</h2>
-        <p class="hint">占位符：<code>{input}</code> 用户输入，<code>{meal}</code> 餐次，<code>{profile}</code> 身体数据，<code>{period}</code> 时段，<code>{stats}</code> 统计数据，<code>{search}</code> 搜索结果。输出 JSON 结构由程序固定追加，不需要在这里写。</p>
+        <h2 data-i18n="prompt.h">提示词模板</h2>
+        <p class="hint" data-i18n-html="prompt.hintHtml">占位符：<code>{input}</code> 用户输入，<code>{meal}</code> 餐次，<code>{profile}</code> 身体数据，<code>{period}</code> 时段，<code>{stats}</code> 统计数据，<code>{search}</code> 搜索结果。输出 JSON 结构由程序固定追加，不需要在这里写。</p>
         <div id="promptList"></div>
       </div>
 
       <div class="card">
-        <h2>关于</h2>
-        <div class="row"><button type="button" id="btnChangelog">查看更新日志</button></div>
+        <h2 data-i18n="about.h">关于</h2>
+        <div class="row"><button type="button" id="btnChangelog" data-i18n="btn.changelog">查看更新日志</button></div>
         <details class="advanced">
-          <summary>高级：后端地址</summary>
-          <label>后端地址（留空 = 同源）
-            <input id="apiBase" placeholder="留空=同源">
+          <summary data-i18n="adv.summary">高级：后端地址</summary>
+          <label><span data-i18n="adv.apiBase">后端地址（留空 = 同源）</span>
+            <input id="apiBase" data-i18n-placeholder="common.sameOriginPh" placeholder="留空=同源">
           </label>
         </details>
       </div>
@@ -237,10 +253,11 @@
       <h2 id="clTitle">更新日志</h2>
       <div id="clDate" class="hint"></div>
       <ul id="clItems" class="bullets"></ul>
-      <div class="row end"><button id="clClose" class="primary">知道了</button></div>
+      <div class="row end"><button id="clClose" class="primary" data-i18n="btn.gotIt">知道了</button></div>
     </div>
   </div>
 
+  <script src="i18n.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

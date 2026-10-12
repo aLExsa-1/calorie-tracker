@@ -1,1 +1,20 @@
-{"version":"0.2.0","date":"2026-10-12","items":["全新应用图标：深色底配绿橙双环，象征摄入与消耗的平衡","手机窄屏下表格改为卡片，不再横向滚动","手机新增底部标签栏导航，桌面仍在顶部","全新极简风格：浅色渐变背景、柔和阴影、统一圆角","「后端地址」移入设置页底部「高级」折叠区","设置页提示词模板改为折叠显示，页面更短","每日页热量差更醒目，各项数据两列排布","首次使用或升级后自动弹出更新日志，设置页可再看","修复凌晨 0–8 点默认日期显示为前一天的问题","版本号更新为 0.2.0"]}
+{
+    "version":  "0.2.1",
+    "date":  "2026-10-13",
+    "items":  [
+                  "饮食记录支持上传食物图片，由 AI 识别后估算热量",
+                  "图片最多 4 张，每张不超过 5 MB，自动压缩后上传",
+                  "设置页新增语言切换：简体中文（默认）与 English",
+                  "英文界面覆盖全部页面，切换后立即生效",
+                  "更新日志弹窗支持中英文显示",
+                  "版本号更新为 0.2.1"
+              ],
+    "items_en":  [
+                     "Food logging now accepts photos; AI recognizes them to estimate calories",
+                     "Up to 4 images, 5 MB each, compressed before upload",
+                     "Language switch in Settings: Simplified Chinese (default) or English",
+                     "English UI covers all pages and switches instantly",
+                     "Changelog dialog shows both Chinese and English",
+                     "Version updated to 0.2.1"
+                 ]
+}

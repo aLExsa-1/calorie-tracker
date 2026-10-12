@@ -55,7 +55,7 @@ def _post(url: str, body: dict, headers: dict, timeout: float) -> dict:
         raise LLMError("接口返回的不是 JSON")
 
 
-def call_llm(profile: dict, system: str, user: str, timeout: float = 120) -> str:
+def call_llm(profile: dict, system: str, user: str, timeout: float = 120, images: list | None = None) -> str:
     """调用一次模型，返回文本内容。"""
     protocol = profile.get("protocol")
     base = str(profile.get("base_url", "")).rstrip("/")
@@ -63,13 +63,20 @@ def call_llm(profile: dict, system: str, user: str, timeout: float = 120) -> str
     model = profile.get("model", "")
     temperature = float(profile.get("temperature", 0.2))
     extra = _extra(profile)
+    images = images or []
 
     if protocol == "openai":
+        user_content: object = user
+        if images:
+            user_content = [{"type": "text", "text": user}] + [
+                {"type": "image_url", "image_url": {"url": f"data:{img['mime']};base64,{img['data']}"}}
+                for img in images
+            ]
         body = {
             "model": model,
             "messages": [
                 {"role": "system", "content": system},
-                {"role": "user", "content": user},
+                {"role": "user", "content": user_content},
             ],
             "temperature": temperature,
             "max_tokens": int(profile.get("max_tokens", 4096)),
@@ -90,7 +97,7 @@ def call_llm(profile: dict, system: str, user: str, timeout: float = 120) -> str
             "model": model,
             "max_tokens": int(profile.get("max_tokens", 4096)),
             "system": system,
-            "messages": [{"role": "user", "content": user}],
+            "messages": [{"role": "user", "content": _anthropic_content(user, images)}],
             "temperature": temperature,
         }
         body.update(extra)
@@ -101,6 +108,13 @@ def call_llm(profile: dict, system: str, user: str, timeout: float = 120) -> str
         return "".join(b.get("text", "") for b in blocks if isinstance(b, dict) and b.get("type") == "text")
 
     raise LLMError(f"不支持的协议：{protocol}")
+
+
+def _anthropic_content(user: str, images: list) -> object:
+    if not images:
+        return user
+    blocks = [{"type": "image", "source": {"type": "base64", "media_type": img["mime"], "data": img["data"]}} for img in images]
+    return blocks + [{"type": "text", "text": user}]
 
 
 def parse_json(text: str) -> dict:
