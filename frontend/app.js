@@ -40,6 +40,7 @@ const state = {
   config: null, draft: [], draftNotes: "", dayLoaded: null,
   health: null, changelog: null, report: null, reportList: null,
   profileHistory: null, llmEditing: null,
+  providers: [], library: null,
 };
 
 /* 需要随语言重绘的状态框：sel -> { fn, kind, html }，fn 返回文本/HTML */
@@ -191,6 +192,7 @@ function setSegment(seg) {
   });
   $("#paneFood").hidden = seg !== "food";
   $("#paneAct").hidden = seg !== "activity";
+  renderLibrary();
 }
 
 /* 每日页前后翻一天（按本地日期计算，避免 toISOString 的时区偏差） */
@@ -354,6 +356,190 @@ async function saveDraft() {
   } catch (err) {
     toast(err.message, true);
   }
+}
+
+/* ================= 自定义条目库（手工食物 / 运动） =================
+ * 库条目不经 AI：选中「加入草稿」后与 AI 草稿走同一套核对与保存流程。 */
+function libSeg() {
+  const on = $("[data-seg].active");
+  return on ? on.dataset.seg : "food";
+}
+
+async function loadLibrary() {
+  try {
+    state.library = await api("GET", "/api/library");
+    renderLibrary();
+  } catch (err) {
+    setStatus("#libStatus", err.message, "err");
+  }
+}
+
+function libFormFor(kind) {
+  return kind === "activity" ? $("#libActForm") : $("#libFoodForm");
+}
+
+function renderLibrary() {
+  const lib = state.library;
+  if (!lib) return;
+  const kind = libSeg();
+  const isAct = kind === "activity";
+  const list = isAct ? lib.activities : lib.foods;
+  $("#libFoodForm").hidden = isAct;
+  $("#libActForm").hidden = !isAct;
+  $("#libList").innerHTML = list.length
+    ? list.map((it) => (isAct ? libActRow(it) : libFoodRow(it))).join("")
+    : `<div class="empty">${t("lib.empty")}</div>`;
+  renderLibFormTitle();
+}
+
+function renderLibFormTitle() {
+  const f = libFormFor(libSeg());
+  const editing = f.elements.id.value;
+  $("#libFormTitle").textContent = editing
+    ? t("lib.formEdit")
+    : t(libSeg() === "activity" ? "lib.formNewAct" : "lib.formNew");
+}
+
+function libFoodRow(it) {
+  const parts = [`${fmt(it.kcal, 0)} kcal`];
+  if (it.grams != null) parts.push(`${fmt(it.grams, 0)} ${t("unit.g")}`);
+  if (it.protein_g != null || it.carb_g != null || it.fat_g != null) {
+    parts.push(`${t("th.protein")} ${fmt(it.protein_g, 1)} · ${t("th.carb")} ${fmt(it.carb_g, 1)} · ${t("th.fat")} ${fmt(it.fat_g, 1)}`);
+  }
+  if (it.serving_label) parts.push(esc(it.serving_label));
+  return `<div class="lib-item" data-kind="food" data-id="${it.id}">
+    <div class="lib-main"><b>${esc(it.name)}</b><small>${parts.join(" · ")}</small></div>
+    <div class="lib-use">
+      <label>${t("lib.servings")}<input data-use-n type="number" step="0.5" min="0.1" value="1" inputmode="decimal"></label>
+      <button type="button" class="small primary" data-lib-add>${t("lib.add")}</button>
+    </div>
+    <div class="lib-actions">
+      <button type="button" class="small" data-lib-edit>${t("btn.edit")}</button>
+      <button type="button" class="small danger" data-lib-del>${t("btn.delete")}</button>
+    </div>
+  </div>`;
+}
+
+function libActRow(it) {
+  const parts = [`${fmt(it.kcal, 0)} kcal`];
+  if (it.minutes != null) parts.push(`${fmt(it.minutes, 0)} ${t("unit.min")}`);
+  if (it.notes) parts.push(esc(it.notes));
+  return `<div class="lib-item" data-kind="activity" data-id="${it.id}">
+    <div class="lib-main"><b>${esc(it.name)}</b><small>${parts.join(" · ")}</small></div>
+    <div class="lib-use">
+      <label>${t("lib.minutesUse")}<input data-use-n type="number" step="1" min="1" value="${it.minutes != null ? fmt(it.minutes, 0) : 30}" inputmode="numeric"></label>
+      <button type="button" class="small primary" data-lib-add>${t("lib.add")}</button>
+    </div>
+    <div class="lib-actions">
+      <button type="button" class="small" data-lib-edit>${t("btn.edit")}</button>
+      <button type="button" class="small danger" data-lib-del>${t("btn.delete")}</button>
+    </div>
+  </div>`;
+}
+
+/* 加入草稿：食物按份数缩放；运动按时长比例换算热量（库条目没有时长则按每次热量） */
+function addLibItemToDraft(row) {
+  const kind = row.dataset.kind;
+  const id = Number(row.dataset.id);
+  const n = Number(row.querySelector("[data-use-n]").value);
+  if (!Number.isFinite(n) || n <= 0) return toast(t("toast.badAmount"), true);
+  if (kind === "food") {
+    const it = (state.library?.foods || []).find((x) => x.id === id);
+    if (!it) return;
+    const r1 = (v) => (v == null ? null : Math.round(v * n * 10) / 10);
+    state.draft.push({
+      kind: "food", name: it.name, meal: $("#recMeal").value || "",
+      grams: r1(it.grams), kcal: r1(it.kcal),
+      protein_g: r1(it.protein_g), carb_g: r1(it.carb_g), fat_g: r1(it.fat_g),
+      confidence: null,
+      basis: `${t("lib.servings")} ×${n}${it.serving_label ? `（${it.serving_label}）` : ""}`,
+      raw_text: "", llm_name: "manual",
+    });
+  } else {
+    const it = (state.library?.activities || []).find((x) => x.id === id);
+    if (!it) return;
+    let kcal = it.kcal;
+    let minutes = n;
+    if (it.minutes) kcal = it.kcal * (n / it.minutes);
+    else { minutes = null; kcal = it.kcal; }
+    state.draft.push({
+      kind: "activity", name: it.name, meal: "",
+      minutes, kcal: Math.round(kcal * 10) / 10,
+      confidence: null, basis: it.minutes ? "" : t("lib.noMinutes"),
+      raw_text: "", llm_name: "manual",
+    });
+  }
+  renderDraft();
+  setStatus("#libStatus", () => t("lib.addedDraft"), "ok");
+}
+
+function fillLibForm(kind, it) {
+  const f = libFormFor(kind);
+  Object.keys(f.elements).forEach((name) => {
+    const el = f.elements[name];
+    if (!el || !el.name) return;
+    el.value = it[el.name] ?? "";
+  });
+  renderLibFormTitle();
+  f.scrollIntoView({ behavior: "smooth", block: "center" });
+}
+
+function resetLibForm(kind) {
+  const f = libFormFor(kind);
+  f.reset();
+  f.elements.id.value = "";
+  renderLibFormTitle();
+}
+
+async function saveLibItem(kind, form) {
+  const body = {};
+  Array.from(form.elements).forEach((el) => {
+    if (!el.name) return;
+    body[el.name] = el.type === "number" || el.name === "id" ? numOrNull(el.value.trim()) : el.value.trim();
+  });
+  if (body.id === null) delete body.id;
+  if (!String(body.name || "").trim() || body.kcal === null || body.kcal === undefined) {
+    return toast(t("lib.needName"), true);
+  }
+  try {
+    await api("POST", kind === "activity" ? "/api/library/activities" : "/api/library/foods", body);
+    toast(t("lib.saved"));
+    resetLibForm(kind);
+    await loadLibrary();
+  } catch (err) {
+    toast(err.message, true);
+  }
+}
+
+async function deleteLibItem(kind, id) {
+  if (!confirm(t("confirm.deleteLib"))) return;
+  try {
+    await api("DELETE", `/api/library/${kind === "activity" ? "activities" : "foods"}/${id}`);
+    toast(t("lib.deleted"));
+    await loadLibrary();
+  } catch (err) {
+    toast(err.message, true);
+  }
+}
+
+function bindLibrary() {
+  $("#libList").addEventListener("click", (e) => {
+    const row = e.target.closest(".lib-item");
+    if (!row) return;
+    const kind = row.dataset.kind;
+    const id = Number(row.dataset.id);
+    if (e.target.closest("[data-lib-add]")) addLibItemToDraft(row);
+    if (e.target.closest("[data-lib-del]")) deleteLibItem(kind, id);
+    if (e.target.closest("[data-lib-edit]")) {
+      const list = kind === "activity" ? state.library.activities : state.library.foods;
+      const it = list.find((x) => x.id === id);
+      if (it) fillLibForm(kind, it);
+    }
+  });
+  $("#libFoodForm").addEventListener("submit", (e) => { e.preventDefault(); saveLibItem("food", e.currentTarget); });
+  $("#libActForm").addEventListener("submit", (e) => { e.preventDefault(); saveLibItem("activity", e.currentTarget); });
+  $("#btnLibFoodReset").addEventListener("click", () => resetLibForm("food"));
+  $("#btnLibActReset").addEventListener("click", () => resetLibForm("activity"));
 }
 
 /* ================= 每日 ================= */
@@ -660,6 +846,7 @@ function resetLlmForm() {
   f.elements.json_mode.checked = true;
   state.llmEditing = null;
   renderLlmFormTitle();
+  resetModelTools();
 }
 
 function fillLlmForm(p) {
@@ -671,7 +858,104 @@ function fillLlmForm(p) {
   f.elements.json_mode.checked = !!p.json_mode;
   state.llmEditing = p.name;
   renderLlmFormTitle();
+  resetModelTools();
+  $("#llmPreset").value = "";
   f.scrollIntoView({ behavior: "smooth", block: "center" });
+}
+
+/* ---------- 提供商预设 + 上游可用模型 ----------
+ * 预设只负责预填接口地址、协议与常用模型名；模型名会随厂商更新过时，
+ * 因此「获取可用模型」直接调用后端向服务商查询模型列表，结果用下拉框快速选择。 */
+function providerById(id) {
+  return (state.providers || []).find((p) => p.id === id) || null;
+}
+
+function renderPresetSelect() {
+  const sel = $("#llmPreset");
+  const cur = sel.value;
+  const opts = (state.providers || []).map((p) => `<option value="${esc(p.id)}">${esc(p.label)}</option>`).join("");
+  sel.innerHTML = `<option value="">${t("llm.presetNone")}</option>${opts}`;
+  sel.value = providerById(cur) ? cur : "";
+  renderPresetNote();
+}
+
+function renderPresetNote() {
+  const p = providerById($("#llmPreset").value);
+  $("#llmPresetNote").textContent = p && p.note ? p.note : "";
+  renderModelDatalist(p ? p.models : []);
+  if (p && p.models.length) renderModelsHint(t("llm.presetModels"));
+  else if (!p) renderModelsHint("");
+}
+
+/* 预设模型放进 datalist（输入框内可直接联想），也作为「常用模型」提示 */
+function renderModelDatalist(models) {
+  $("#llmModelList").innerHTML = (models || []).map((m) => `<option value="${esc(m)}"></option>`).join("");
+}
+
+function renderModelsHint(text) {
+  $("#llmModelsHint").textContent = text || "";
+}
+
+function resetModelTools() {
+  $("#llmModelPick").hidden = true;
+  $("#llmModelPick").innerHTML = "";
+  renderModelDatalist([]);
+  renderModelsHint("");
+  renderPresetNote();
+}
+
+function onPresetChange() {
+  const p = providerById($("#llmPreset").value);
+  const f = $("#llmForm");
+  if (!p) { renderPresetNote(); return; }
+  f.elements.protocol.value = p.protocol;
+  f.elements.base_url.value = p.base_url;
+  if (!f.elements.name.value.trim()) f.elements.name.value = p.label.split("（")[0].split("(")[0].trim();
+  if (!f.elements.model.value.trim() && p.models.length) f.elements.model.value = p.models[0];
+  renderPresetNote();
+  renderModelsHint(t("llm.presetApplied", { name: p.label }));
+}
+
+/* 获取可用模型：编辑已保存档案时用档案 id（可复用已存 Key）；新增时用表单里临时填写的协议、地址和 Key */
+async function fetchModels(btn) {
+  const f = $("#llmForm");
+  const id = f.elements.id.value.trim();
+  const base_url = f.elements.base_url.value.trim();
+  const api_key = f.elements.api_key.value.trim();
+  if (!base_url) return toast(t("err.urlRequired"), true);
+  if (!api_key && !id) return renderModelsHint(t("llm.fetchNeedKey"));
+  renderModelsHint(t("llm.fetching"));
+  try {
+    const body = { id, protocol: f.elements.protocol.value, base_url, api_key };
+    const r = await withBusy(btn, () => api("POST", "/api/llm/models", body));
+    const models = r.models || [];
+    const pick = $("#llmModelPick");
+    pick.innerHTML = models.map((m) => `<option value="${esc(m.id)}">${esc(m.name && m.name !== m.id ? `${m.name}（${m.id}）` : m.id)}</option>`).join("");
+    pick.hidden = models.length === 0;
+    renderModelDatalist(models.map((m) => m.id));
+    renderModelsHint(t("llm.fetchOk", { n: models.length }));
+    if (!f.elements.model.value.trim() && models.length) f.elements.model.value = models[0].id;
+  } catch (err) {
+    renderModelsHint(err.message);
+  }
+}
+
+function bindPresetModelTools() {
+  $("#llmPreset").addEventListener("change", onPresetChange);
+  $("#btnFetchModels").addEventListener("click", (e) => fetchModels(e.currentTarget));
+  $("#llmModelPick").addEventListener("change", (e) => {
+    $("#llmForm").elements.model.value = e.target.value;
+  });
+}
+
+async function loadProviders() {
+  try {
+    const { providers } = await api("GET", "/api/providers");
+    state.providers = providers;
+    renderPresetSelect();
+  } catch (err) {
+    toast(err.message, true);
+  }
 }
 
 function renderLlmList(c) {
@@ -1060,6 +1344,8 @@ function refreshLanguage() {
   renderReportList();
   renderProfileHistory();
   renderLlmFormTitle();
+  renderPresetSelect();
+  renderLibrary();
   renderLlmList(state.config);
   renderTaskMap(state.config);
   renderSearchKeyPlaceholder();
@@ -1181,6 +1467,8 @@ function init() {
 
   $("#llmForm").addEventListener("submit", saveLlm);
   $("#btnLlmReset").addEventListener("click", resetLlmForm);
+  bindPresetModelTools();
+  bindLibrary();
   $("#llmList").addEventListener("click", (e) => {
     const tgt = e.target.closest("button");
     if (!tgt) return;
@@ -1229,7 +1517,9 @@ function init() {
 
 /* 取得同意后才执行：健康检查、加载数据、必要时弹更新日志 */
 function startApp() {
-  checkHealth().then((ok) => { if (ok) loadDay(); }).finally(maybeShowChangelog);
+  checkHealth().then((ok) => {
+    if (ok) { loadDay(); loadLibrary(); loadProviders(); }
+  }).finally(maybeShowChangelog);
 }
 
 document.addEventListener("DOMContentLoaded", init);

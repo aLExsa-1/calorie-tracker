@@ -238,7 +238,8 @@ python .android-build\setup_tools.py        # 解压并解析 SDK 组件直链
 python .android-build\install_sdk.py        # 下载并安装 platform-tools / android-35 / build-tools 35
 python .android-build\accept_licenses.py    # 写入 SDK 许可文件
 python .android-build\make_keystore.py      # 生成 release keystore（已有则跳过）
-python .android-build\make_icons.py         # 重新生成启动图标
+python .android-build\make_icons.py         # 重新生成启动图标（读 docs\icon-source.png）
+python .android-build\make_icon_preview.py  # 生成 docs\icon-preview.png 与上架用 docs\icon-216.png
 ```
 
 ## 构建环境的几点说明

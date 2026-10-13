@@ -17,6 +17,7 @@ from datetime import date, timedelta
 from . import schemas
 from .config import Config, ConfigError
 from .llm import LLMError, call_llm, parse_json
+from .llm import list_models as llm_list_models
 from .prompts import OUTPUT_FORMAT, SEARCH_BLOCK, TASKS
 from .search import SearchError, format_results, search
 from .store import Store
@@ -28,6 +29,11 @@ PROFILE_RANGES = {
     "bmr_kcal": (300, 5000), "maintenance_kcal": (500, 8000),
 }
 SEXES = ("male", "female", "other", "")
+
+# 自定义条目库字段取值范围（与记录 entries 的口径一致）
+FOOD_RANGES = {"kcal": (0, 5000), "grams": (0, 10000),
+               "protein_g": (0, 1000), "carb_g": (0, 1000), "fat_g": (0, 1000)}
+ACTIVITY_RANGES = {"kcal": (0, 5000), "minutes": (0, 1440)}
 
 
 class ApiError(Exception):
@@ -163,6 +169,72 @@ class Engine:
         items = [{**it, "kind": "activity", "meal": "", "raw_text": text.strip(),
                   "llm_name": meta["llm"]} for it in result["items"]]
         return {"items": items, "notes": result["notes"], **{k: meta[k] for k in ("llm", "search_used", "warnings")}}
+
+    # ================= 自定义条目库（不经 AI，用户手工维护） =================
+    @staticmethod
+    def _lib_num(value, field: str, lo: float, hi: float, required: bool = False):
+        if value in (None, ""):
+            if required:
+                raise ApiError(400, f"{field} 不能为空")
+            return None
+        try:
+            x = float(value)
+        except (TypeError, ValueError):
+            raise ApiError(400, f"{field} 必须是数字")
+        if not lo <= x <= hi:
+            raise ApiError(400, f"{field} 应在 {lo:g}–{hi:g} 之间")
+        return round(x, 1)
+
+    def library(self) -> dict:
+        return {"foods": self.store.list_custom_foods(),
+                "activities": self.store.list_custom_activities()}
+
+    def save_custom_food(self, body: dict) -> dict:
+        try:
+            fid = int(body["id"]) if body.get("id") not in (None, "") else None
+        except (TypeError, ValueError):
+            raise ApiError(400, "id 必须是整数")
+        name = str(body.get("name") or "").strip()
+        if not name:
+            raise ApiError(400, "名称不能为空")
+        fields = {"name": name[:60]}
+        for field, (lo, hi) in FOOD_RANGES.items():
+            fields[field] = self._lib_num(body.get(field), field, lo, hi,
+                                          required=(field == "kcal"))
+        fields["serving_label"] = str(body.get("serving_label") or "").strip()[:40] or None
+        fields["notes"] = str(body.get("notes") or "").strip()[:500] or None
+        rid = self.store.upsert_custom_food(fid, fields)
+        if not rid:
+            raise ApiError(404, "自定义食物不存在")
+        saved = self.store.get_custom_food(rid)
+        return saved
+
+    def delete_custom_food(self, fid: int) -> None:
+        if not self.store.delete_custom_food(fid):
+            raise ApiError(404, "自定义食物不存在")
+
+    def save_custom_activity(self, body: dict) -> dict:
+        try:
+            aid = int(body["id"]) if body.get("id") not in (None, "") else None
+        except (TypeError, ValueError):
+            raise ApiError(400, "id 必须是整数")
+        name = str(body.get("name") or "").strip()
+        if not name:
+            raise ApiError(400, "名称不能为空")
+        fields = {"name": name[:60]}
+        for field, (lo, hi) in ACTIVITY_RANGES.items():
+            fields[field] = self._lib_num(body.get(field), field, lo, hi,
+                                          required=(field == "kcal"))
+        fields["notes"] = str(body.get("notes") or "").strip()[:500] or None
+        rid = self.store.upsert_custom_activity(aid, fields)
+        if not rid:
+            raise ApiError(404, "自定义运动不存在")
+        saved = self.store.get_custom_activity(rid)
+        return saved
+
+    def delete_custom_activity(self, aid: int) -> None:
+        if not self.store.delete_custom_activity(aid):
+            raise ApiError(404, "自定义运动不存在")
 
     # ================= 记录 =================
     def save_entries(self, day: date, items: list[dict]) -> list[dict]:
@@ -323,6 +395,41 @@ class Engine:
             raise ApiError(502, f"连接失败：{exc}")
         return {"ok": bool(data.get("ok")), "name": profile["name"], "model": profile["model"],
                 "latency_ms": int((time.time() - started) * 1000), "reply": text[:200]}
+
+    # ================= 上游可用模型查询 =================
+    def list_models(self, body: dict) -> dict:
+        """查询某档案的可用模型列表。
+
+        优先按已保存档案的 id 查询（用其完整配置）；档案未保存时，
+        允许直接提交表单里临时填写的 protocol / base_url / api_key 查询，
+        方便用户在保存前先挑好模型。
+        """
+        pid = str(body.get("id") or "").strip() or None
+        profile = None
+        if pid:
+            try:
+                profile = self.config.llm_full(pid)
+            except ConfigError:
+                profile = None
+        if profile is None:
+            protocol = body.get("protocol")
+            if protocol not in ("openai", "anthropic"):
+                raise ApiError(400, "尚未配置 LLM，请先选择协议并填写接口地址")
+            base = str(body.get("base_url") or "").strip().rstrip("/")
+            if not base.startswith(("http://", "https://")):
+                raise ApiError(400, "接口地址不合法")
+            profile = {
+                "protocol": protocol,
+                "base_url": base,
+                "api_key": str(body.get("api_key") or "").strip(),
+            }
+        if not profile.get("api_key"):
+            raise ApiError(400, "请先填写 API Key，或选择已保存的档案后再获取模型")
+        try:
+            models = llm_list_models(profile)
+        except LLMError as exc:
+            raise ApiError(502, f"获取模型列表失败：{exc}")
+        return {"models": models, "count": len(models)}
 
     def test_search(self, query: str) -> dict:
         cfg = self.config.search_full()

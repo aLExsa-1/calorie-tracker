@@ -7,7 +7,7 @@
   <meta name="referrer" content="no-referrer">
   <title data-i18n="page.title">热量管理</title>
   <script>/* 配色在首次绘制前生效，避免闪色；合法性由 app.js 的 setTheme 再校验 */try{var th=localStorage.getItem("ct.theme");if(th)document.documentElement.setAttribute("data-theme",th)}catch(e){}</script>
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 36 36'%3E%3Crect width='36' height='36' rx='11' fill='%232f5d2c'/%3E%3Ccircle cx='14' cy='18' r='6.2' fill='none' stroke='%23fff' stroke-width='3'/%3E%3Ccircle cx='22.5' cy='18' r='6.2' fill='none' stroke='%23f0a35e' stroke-width='3'/%3E%3C/svg%3E">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 36 36'%3E%3Cdefs%3E%3ClinearGradient id='b' gradientUnits='userSpaceOnUse' x1='18' y1='0' x2='18' y2='36'%3E%3Cstop offset='0' stop-color='%2316233a'/%3E%3Cstop offset='1' stop-color='%230a1322'/%3E%3C/linearGradient%3E%3ClinearGradient id='g' gradientUnits='userSpaceOnUse' x1='5' y1='10' x2='19' y2='27'%3E%3Cstop offset='0' stop-color='%23c6f86a'/%3E%3Cstop offset='1' stop-color='%2306bfc6'/%3E%3C/linearGradient%3E%3ClinearGradient id='o' gradientUnits='userSpaceOnUse' x1='24' y1='9' x2='30' y2='27'%3E%3Cstop offset='0' stop-color='%23fea431'/%3E%3Cstop offset='1' stop-color='%23f83840'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='36' height='36' rx='8' fill='url(%23b)'/%3E%3Ccircle cx='11.67' cy='18' r='7.13' fill='none' stroke='url(%23g)' stroke-width='3.07'/%3E%3Ccircle cx='24.3' cy='18' r='7.13' fill='none' stroke='url(%23o)' stroke-width='3.07'/%3E%3Cpath d='M18.37 20.44A7.13 7.13 0 0 1 8.66 24.46' fill='none' stroke='url(%23g)' stroke-width='3.07'/%3E%3C/svg%3E">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -130,6 +130,40 @@
         </div>
 
         <div id="estStatus" class="status"></div>
+      </div>
+
+      <div class="card" id="libCard">
+        <h2 data-i18n="lib.h">自定义条目库</h2>
+        <p class="hint" data-i18n="lib.hint">手动录入自己的食物营养与运动消耗，保存在本机。在上方选择「饮食」或「运动」后，点击「加入草稿」即可与 AI 估算一样核对并保存。</p>
+        <div id="libList" class="lib-list"></div>
+        <h3 id="libFormTitle" data-i18n="lib.formNew">新增自定义食物</h3>
+        <form id="libFoodForm" class="grid three" hidden>
+          <input type="hidden" name="id">
+          <label><span data-i18n="th.name">名称</span><input name="name" required data-i18n-placeholder="rec.foodPh" placeholder="例如：鸡胸肉"></label>
+          <label><span data-i18n="lib.kcalPer">每份热量 kcal</span><input name="kcal" type="number" step="0.1" min="0" max="5000" required inputmode="decimal"></label>
+          <label><span data-i18n="lib.gramsPer">每份克数（可选）</span><input name="grams" type="number" step="0.1" min="0" inputmode="decimal"></label>
+          <label><span data-i18n="lib.protein">每份蛋白质 g（可选）</span><input name="protein_g" type="number" step="0.1" min="0" inputmode="decimal"></label>
+          <label><span data-i18n="lib.carb">每份碳水 g（可选）</span><input name="carb_g" type="number" step="0.1" min="0" inputmode="decimal"></label>
+          <label><span data-i18n="lib.fat">每份脂肪 g（可选）</span><input name="fat_g" type="number" step="0.1" min="0" inputmode="decimal"></label>
+          <label class="wide"><span data-i18n="lib.serving">份量说明（可选）</span><input name="serving_label" data-i18n-placeholder="lib.servingPh" placeholder="例如：1 碗 / 1 个 / 1 袋"></label>
+          <label class="wide"><span data-i18n="lib.notes">备注（可选）</span><input name="notes"></label>
+          <div class="wide row">
+            <button type="submit" class="primary" data-i18n="btn.save">保存</button>
+            <button type="button" id="btnLibFoodReset" data-i18n="btn.resetForm">清空表单</button>
+          </div>
+        </form>
+        <form id="libActForm" class="grid three" hidden>
+          <input type="hidden" name="id">
+          <label><span data-i18n="th.name">名称</span><input name="name" required data-i18n-placeholder="rec.actPh" placeholder="例如：快走"></label>
+          <label><span data-i18n="lib.kcalPerAct">每次消耗 kcal</span><input name="kcal" type="number" step="0.1" min="0" max="5000" required inputmode="decimal"></label>
+          <label><span data-i18n="lib.minutesPer">对应时长 分钟（可选）</span><input name="minutes" type="number" step="0.1" min="0" max="1440" inputmode="decimal"></label>
+          <label class="wide"><span data-i18n="lib.notes">备注（可选）</span><input name="notes"></label>
+          <div class="wide row">
+            <button type="submit" class="primary" data-i18n="btn.save">保存</button>
+            <button type="button" id="btnLibActReset" data-i18n="btn.resetForm">清空表单</button>
+          </div>
+        </form>
+        <div id="libStatus" class="status"></div>
       </div>
 
       <div class="card" id="draftCard" hidden>
@@ -279,7 +313,17 @@
                 <option value="anthropic">Anthropic</option>
               </select>
             </label>
-            <label><span data-i18n="llm.model">模型</span><input name="model" required data-i18n-placeholder="llm.modelPh" placeholder="例如 deepseek-chat"></label>
+            <label class="wide"><span data-i18n="llm.preset">预设提供商</span>
+              <select id="llmPreset"><option value="" data-i18n="llm.presetNone">手动填写（不使用预设）</option></select>
+              <span id="llmPresetNote" class="field-hint"></span>
+            </label>
+            <label><span data-i18n="llm.model">模型</span>
+              <input name="model" id="llmModel" required list="llmModelList" data-i18n-placeholder="llm.modelPh" placeholder="例如 deepseek-chat">
+              <datalist id="llmModelList"></datalist>
+              <select id="llmModelPick" hidden aria-label="上游返回的可用模型"></select>
+              <button type="button" id="btnFetchModels" class="small" data-i18n="btn.fetchModels">获取可用模型</button>
+            </label>
+            <div id="llmModelsHint" class="wide hint"></div>
             <label class="wide"><span data-i18n="llm.baseUrl">接口地址</span>
               <span class="field-hint" data-i18n-html="llm.urlHint">OpenAI 兼容示例：https://api.deepseek.com/v1<br>Anthropic 示例：https://api.anthropic.com</span>
               <input name="base_url" required placeholder="https://api.deepseek.com/v1">

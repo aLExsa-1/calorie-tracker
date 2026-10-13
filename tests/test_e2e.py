@@ -80,17 +80,17 @@ class E2E(unittest.TestCase):
         self.assertEqual(s, 200)
         self.assertTrue(body["ok"])
 
-    def test_health_version_is_0_3_1(self):
+    def test_health_version_is_0_4_0(self):
         s, body = call(self.base, "GET", "/api/health")
         self.assertEqual(s, 200)
-        self.assertEqual(body["version"], "0.3.1")
+        self.assertEqual(body["version"], "0.4.0")
 
     def test_changelog_json_served(self):
         import json as _json
         import urllib.request
         with urllib.request.urlopen(self.base + "/changelog.json", timeout=5) as r:
             data = _json.loads(r.read().decode("utf-8"))
-        self.assertEqual(data["version"], "0.3.1")
+        self.assertEqual(data["version"], "0.4.0")
         self.assertTrue(len(data["items"]) >= 1)
     def test_llm_profile_crud_masks_key(self):
         pid = self.add_llm("A")
@@ -510,12 +510,12 @@ class E2E(unittest.TestCase):
     def test_changelog_has_030_in_history_zh_and_en(self):
         import json as _json
         data = _json.loads(self._front("changelog.json"))
-        self.assertEqual(data["version"], "0.3.1")
-        self.assertEqual(data["history"][0]["version"], "0.3.1")
+        self.assertEqual(data["version"], "0.4.0")
+        self.assertEqual(data["history"][0]["version"], "0.4.0")
         for h in data["history"]:
             self.assertTrue(h["items"] and h["items_en"], f"v{h['version']} 缺少中文或英文条目")
         self.assertEqual(len(data["history"][0]["items"]), len(data["history"][0]["items_en"]))
-        self.assertEqual([h["version"] for h in data["history"]][:4], ["0.3.1", "0.3.0", "0.2.1", "0.2.0"])
+        self.assertEqual([h["version"] for h in data["history"]][:5], ["0.4.0", "0.3.1", "0.3.0", "0.2.1", "0.2.0"])
 
     def test_i18n_keys_used_in_js_and_html_exist(self):
         import re
@@ -611,6 +611,227 @@ class E2E(unittest.TestCase):
         self.assertIn('data-i18n="ai.badge"', html)
 
 
+class LibraryAndProviders(unittest.TestCase):
+    """自定义条目库、LLM 预设提供商、上游可用模型查询。"""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.data = ROOT / "tests" / ".data" / f"library-{threading.get_ident()}"
+        cls.data.mkdir(parents=True, exist_ok=True)
+        cls.mock = MockServer().start()
+        cls.engine = Engine(Store(cls.data / "ct.db"), Config(cls.data / "config.json"))
+        cls.httpd = make_server(cls.engine, "127.0.0.1", 0)
+        cls.base = f"http://127.0.0.1:{cls.httpd.server_address[1]}"
+        threading.Thread(target=cls.httpd.serve_forever, daemon=True).start()
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.httpd.shutdown()
+        cls.httpd.server_close()
+        cls.engine.store.close()
+        cls.mock.stop()
+
+    def setUp(self):
+        self.mock.state.requests.clear()
+        self.mock.state.fail_next = 0
+        # 每个用例从空库开始
+        lib = call(self.base, "GET", "/api/library")[1]
+        for f in lib["foods"]:
+            call(self.base, "DELETE", f"/api/library/foods/{f['id']}")
+        for a in lib["activities"]:
+            call(self.base, "DELETE", f"/api/library/activities/{a['id']}")
+
+    # ---------------- 自定义条目库 ----------------
+    def test_custom_food_crud(self):
+        s, body = call(self.base, "POST", "/api/library/foods", {
+            "name": "鸡胸肉", "kcal": 165, "grams": 100, "protein_g": 31, "carb_g": 0, "fat_g": 3.6,
+            "serving_label": "100g"})
+        self.assertEqual(s, 201, body)
+        fid = body["food"]["id"]
+        self.assertEqual(body["food"]["kcal"], 165)
+        s, lib = call(self.base, "GET", "/api/library")
+        self.assertEqual([f["name"] for f in lib["foods"]], ["鸡胸肉"])
+        # 带 id 为更新，不新增
+        s, body = call(self.base, "POST", "/api/library/foods", {"id": fid, "name": "鸡胸肉（去皮）", "kcal": 150})
+        self.assertEqual(s, 201, body)
+        self.assertEqual(body["food"]["id"], fid)
+        self.assertEqual(body["food"]["name"], "鸡胸肉（去皮）")
+        s, lib = call(self.base, "GET", "/api/library")
+        self.assertEqual(len(lib["foods"]), 1)
+        s, _ = call(self.base, "DELETE", f"/api/library/foods/{fid}")
+        self.assertEqual(s, 200)
+        s, _ = call(self.base, "DELETE", f"/api/library/foods/{fid}")
+        self.assertEqual(s, 404)
+
+    def test_custom_food_validation(self):
+        cases = [
+            ({"name": "", "kcal": 100}, "名称不能为空"),
+            ({"name": "x"}, "kcal 不能为空"),
+            ({"name": "x", "kcal": 99999}, "应在"),
+            ({"name": "x", "kcal": 100, "protein_g": -1}, "应在"),
+            ({"name": "x", "kcal": "abc"}, "必须是数字"),
+        ]
+        for payload, expect in cases:
+            s, body = call(self.base, "POST", "/api/library/foods", payload)
+            self.assertEqual(s, 400, (payload, body))
+            self.assertIn(expect, body["error"])
+
+    def test_custom_activity_crud_and_validation(self):
+        s, body = call(self.base, "POST", "/api/library/activities",
+                       {"name": "跑步", "kcal": 300, "minutes": 30, "notes": "5km"})
+        self.assertEqual(s, 201, body)
+        aid = body["activity"]["id"]
+        s, lib = call(self.base, "GET", "/api/library")
+        self.assertEqual(lib["activities"][0]["minutes"], 30)
+        s, body = call(self.base, "POST", "/api/library/activities", {"id": aid, "name": "跑步", "kcal": 320})
+        self.assertEqual(body["activity"]["kcal"], 320)
+        s, _ = call(self.base, "DELETE", f"/api/library/activities/{aid}")
+        self.assertEqual(s, 200)
+        s, body = call(self.base, "POST", "/api/library/activities", {"name": "", "kcal": 10})
+        self.assertEqual(s, 400)
+        s, body = call(self.base, "POST", "/api/library/activities", {"name": "x", "kcal": 10, "minutes": 2000})
+        self.assertEqual(s, 400)
+
+    def test_library_item_logs_into_day_summary(self):
+        """库条目按份数换算后，经普通记录接口保存，热量与日汇总一致。"""
+        call(self.base, "PUT", "/api/profile", {"effective_date": "2024-06-01", "maintenance_kcal": 2000})
+        s, body = call(self.base, "POST", "/api/library/foods", {"name": "燕麦", "kcal": 150, "grams": 50,
+                                                                 "protein_g": 5, "carb_g": 27, "fat_g": 3})
+        fid = body["food"]["id"]
+        # 前端按份数缩放后提交，这里模拟 2 份
+        s, saved = call(self.base, "POST", "/api/entries", {"date": "2024-06-02", "items": [
+            {"kind": "food", "name": "燕麦", "kcal": 300, "grams": 100, "protein_g": 10, "carb_g": 54,
+             "fat_g": 6, "meal": "早餐", "llm_name": "manual"}]})
+        self.assertEqual(s, 201, saved)
+        self.assertEqual(saved["entries"][0]["llm_name"], "manual")
+        s, day = call(self.base, "GET", "/api/days/2024-06-02")
+        self.assertAlmostEqual(day["intake"], 300, places=1)
+        self.assertAlmostEqual(day["balance"], round(300 - 2000, 1), places=1)
+        call(self.base, "DELETE", f"/api/library/foods/{fid}")
+
+    # ---------------- LLM 预设提供商 ----------------
+    def test_providers_preset_list(self):
+        s, body = call(self.base, "GET", "/api/providers")
+        self.assertEqual(s, 200)
+        ids = [p["id"] for p in body["providers"]]
+        for pid in ("deepseek", "zhipu", "moonshot", "dashscope", "openai", "anthropic", "gemini",
+                    "openrouter", "siliconflow", "xai", "volcark", "mistral", "minimax"):
+            self.assertIn(pid, ids)
+        for p in body["providers"]:
+            self.assertTrue(p["base_url"].startswith("https://"), p["id"])
+            self.assertIn(p["protocol"], ("openai", "anthropic"), p["id"])
+            self.assertIn("models", p)
+        anth = next(p for p in body["providers"] if p["id"] == "anthropic")
+        self.assertEqual(anth["protocol"], "anthropic")
+        self.assertEqual(anth["base_url"], "https://api.anthropic.com")
+
+    # ---------------- 上游可用模型 ----------------
+    def test_list_models_openai_by_saved_profile(self):
+        s, body = call(self.base, "POST", "/api/config/llm", {
+            "name": "list-openai", "protocol": "openai", "model": "x",
+            "base_url": self.mock.base + "/v1", "api_key": "sk-list-openai-0001"})
+        pid = next(p["id"] for p in body["llm_profiles"] if p["name"] == "list-openai")
+        s, res = call(self.base, "POST", "/api/llm/models", {"id": pid})
+        self.assertEqual(s, 200, res)
+        self.assertEqual(res["count"], 2)
+        # 按 id 排序
+        self.assertEqual([m["id"] for m in res["models"]], ["mock-model-a", "mock-model-b"])
+        req = next(r for r in self.mock.state.requests if r["kind"] == "models")
+        self.assertEqual(req["path"], "/v1/models")
+        self.assertEqual(req["auth"], "Bearer sk-list-openai-0001")
+        call(self.base, "DELETE", f"/api/config/llm/{pid}")
+
+    def test_list_models_adhoc_before_save(self):
+        """档案未保存时，直接用表单里临时填写的协议 / 地址 / Key 查询。"""
+        s, res = call(self.base, "POST", "/api/llm/models", {
+            "protocol": "openai", "base_url": self.mock.base + "/v1", "api_key": "sk-adhoc-7777"})
+        self.assertEqual(s, 200, res)
+        self.assertTrue(res["models"])
+        req = next(r for r in self.mock.state.requests if r["kind"] == "models")
+        self.assertEqual(req["auth"], "Bearer sk-adhoc-7777")
+
+    def test_list_models_anthropic_url_and_headers(self):
+        """Anthropic 协议：base 不以 /v1 结尾时拼 /v1/models，并带 x-api-key 与 anthropic-version。"""
+        s, res = call(self.base, "POST", "/api/llm/models", {
+            "protocol": "anthropic", "base_url": self.mock.base, "api_key": "ant-list-5555"})
+        self.assertEqual(s, 200, res)
+        req = next(r for r in self.mock.state.requests if r["kind"] == "models")
+        self.assertTrue(req["path"].startswith("/v1/models"))
+        self.assertEqual(req["auth"], "ant-list-5555")
+        self.assertEqual(req["anthropic_version"], "2023-06-01")
+
+    def test_list_models_errors(self):
+        # 缺少 Key
+        s, res = call(self.base, "POST", "/api/llm/models", {
+            "protocol": "openai", "base_url": self.mock.base + "/v1", "api_key": ""})
+        self.assertEqual(s, 400, res)
+        self.assertIn("API Key", res["error"])
+        # 非法协议
+        s, res = call(self.base, "POST", "/api/llm/models", {
+            "protocol": "gemini", "base_url": self.mock.base, "api_key": "k"})
+        self.assertEqual(s, 400, res)
+        # 上游 500 → 502
+        self.mock.state.fail_next = 1
+        s, res = call(self.base, "POST", "/api/llm/models", {
+            "protocol": "openai", "base_url": self.mock.base + "/v1", "api_key": "k"})
+        self.assertEqual(s, 502, res)
+        self.assertIn("获取模型列表失败", res["error"])
+
+    # ---------------- 清除 / 导出包含条目库 ----------------
+    def test_export_and_clear_cover_library(self):
+        call(self.base, "POST", "/api/library/foods", {"name": "苹果", "kcal": 52})
+        call(self.base, "POST", "/api/library/activities", {"name": "散步", "kcal": 100, "minutes": 30})
+        s, dump = call(self.base, "GET", "/api/data/export")
+        self.assertEqual([f["name"] for f in dump["custom_foods"]], ["苹果"])
+        self.assertEqual([a["name"] for a in dump["custom_activities"]], ["散步"])
+        s, body = call(self.base, "POST", "/api/data/clear", {})
+        self.assertEqual(body["removed"]["custom_foods"], 1)
+        self.assertEqual(body["removed"]["custom_activities"], 1)
+        s, lib = call(self.base, "GET", "/api/library")
+        self.assertEqual(lib, {"foods": [], "activities": []})
+
+    # ---------------- 前端契约 ----------------
+    def test_frontend_library_and_preset_contract(self):
+        import re
+        html = (ROOT / "frontend" / "index.html").read_text(encoding="utf-8")
+        js = (ROOT / "frontend" / "app.js").read_text(encoding="utf-8")
+        html_ids = set(re.findall(r'\bid="([^"]+)"', html))
+        for el in ("libCard", "libList", "libFoodForm", "libActForm", "llmPreset", "llmPresetNote",
+                   "llmModel", "llmModelList", "llmModelPick", "btnFetchModels", "llmModelsHint"):
+            self.assertIn(el, html_ids, f"index.html 缺少元素 {el}")
+        for hook in ("data-lib-add", "data-lib-edit", "data-lib-del", "data-use-n"):
+            self.assertIn(hook, js + html, f"缺少库操作钩子 {hook}")
+        # 新增 API 调用路径必须与路由一致
+        for path in ("/api/library", "/api/providers", "/api/llm/models", "/api/library/foods",
+                     "/api/library/activities"):
+            self.assertIn(path, js)
+
+    def test_frontend_passes_library_form_fields_by_name(self):
+        """库表单的 name 必须与后端字段一致（否则保存会丢字段）。"""
+        import re
+        html = (ROOT / "frontend" / "index.html").read_text(encoding="utf-8")
+        food_block = html.split('id="libFoodForm"', 1)[1].split("</form>", 1)[0]
+        act_block = html.split('id="libActForm"', 1)[1].split("</form>", 1)[0]
+        food_names = set(re.findall(r'name="(\w+)"', food_block))
+        act_names = set(re.findall(r'name="(\w+)"', act_block))
+        self.assertTrue({"id", "name", "kcal", "grams", "protein_g", "carb_g", "fat_g",
+                         "serving_label", "notes"} <= food_names, food_names)
+        self.assertTrue({"id", "name", "kcal", "minutes", "notes"} <= act_names, act_names)
+
+    def test_i18n_has_library_and_preset_keys_in_both_languages(self):
+        import re
+        src = (ROOT / "frontend" / "i18n.js").read_text(encoding="utf-8")
+        zh_block = src.split('"zh-CN": {', 1)[1].split('"en": {', 1)[0]
+        en_block = src.split('"en": {', 1)[1]
+        key_re = re.compile(r'^\s*"([^"]+)":\s*"', re.M)
+        zh_keys = set(key_re.findall(zh_block))
+        en_keys = set(key_re.findall(en_block))
+        for key in ("lib.h", "lib.add", "lib.kcalPer", "llm.preset", "llm.fetchModels", "btn.fetchModels",
+                    "err.urlRequired", "toast.badAmount", "confirm.deleteLib"):
+            self.assertIn(key, zh_keys, key)
+            self.assertIn(key, en_keys, key)
+
+
 class DataRightsAndLocalAccess(unittest.TestCase):
     """数据导出/删除（用户权利）与本地服务访问控制。"""
 
@@ -698,7 +919,7 @@ class DataRightsAndLocalAccess(unittest.TestCase):
         s, dump = call_tok(self.base, self.token, "GET", "/api/data/export")
         self.assertEqual(s, 200)
         self.assertEqual(dump["app"], "calorie-tracker")
-        self.assertEqual(dump["version"], "0.3.1")
+        self.assertEqual(dump["version"], "0.4.0")
         self.assertTrue(dump["exported_at"])
         # 全量数据
         self.assertEqual(len(dump["entries"]), 2)
@@ -726,7 +947,8 @@ class DataRightsAndLocalAccess(unittest.TestCase):
         s, body = call_tok(self.base, self.token, "POST", "/api/data/clear", {})
         self.assertEqual(s, 200, body)
         self.assertTrue(body["ok"])
-        self.assertEqual(body["removed"], {"profiles": 1, "entries": 2, "reports": 1})
+        self.assertEqual(body["removed"], {"profiles": 1, "entries": 2, "custom_foods": 0,
+                                           "custom_activities": 0, "reports": 1})
         # 清空后各接口都应返回空
         s, entries = call_tok(self.base, self.token, "GET", "/api/entries?date=2025-01-02")
         self.assertEqual(entries["entries"], [])
@@ -736,7 +958,8 @@ class DataRightsAndLocalAccess(unittest.TestCase):
         self.assertEqual(reports["reports"], [])
         # 再次清除是幂等的
         s, body = call_tok(self.base, self.token, "POST", "/api/data/clear", {})
-        self.assertEqual(body["removed"], {"profiles": 0, "entries": 0, "reports": 0})
+        self.assertEqual(body["removed"], {"profiles": 0, "entries": 0, "custom_foods": 0,
+                                           "custom_activities": 0, "reports": 0})
 
     def test_reports_can_be_deleted(self):
         self.seed()

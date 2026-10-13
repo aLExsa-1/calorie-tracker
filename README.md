@@ -8,7 +8,7 @@
 
 ### 下载与解压
 
-电脑版发布包为 `calorie-tracker-0.3.1-windows.zip`（约 65 KB，只含程序代码，不含个人数据）。解压到任意目录即可，例如 `C:\Apps\calorie-tracker`。
+电脑版发布包为 `calorie-tracker-0.4.0-windows.zip`（约 107 KB，只含程序代码，不含个人数据；含《隐私政策》《用户协议》两份协议页）。解压到任意目录即可，例如 `C:\Apps\calorie-tracker`。重新打包：`python .android-build/make_windows_zip.py`。
 
 ### 环境要求
 
@@ -37,13 +37,13 @@ python -m backend serve --port 8787
 
 ## 安卓版 APK
 
-本仓库同时提供打包好的安卓应用（0.3.1）：APK 内嵌 Python 运行时与后端，**不需要电脑即可使用**，数据保存在手机应用私有目录。
+本仓库同时提供打包好的安卓应用（0.4.0）：APK 内嵌 Python 运行时与后端，**不需要电脑即可使用**，数据保存在手机应用私有目录。
 
 ```
-android/CalorieTracker-0.3.1-arm64.apk   约 22.1 MB，仅 arm64-v8a，Android 7.0+
+android/CalorieTracker-0.4.0-arm64.apk   约 22.1 MB，仅 arm64-v8a，Android 7.0+
 ```
 
-安装后首次启动会先显示《隐私政策》与《用户协议》的同意页，然后需在「设置」页填一次 LLM 档案（地址 / 模型 / API Key）。0.3.1 的真机复测尚未完成，详见 [android/README-Android.md](android/README-Android.md)。构建方法、与电脑版的差异、已验证与未验证事项也在该文件中。
+安装后首次启动会先显示《隐私政策》与《用户协议》的同意页，然后需在「设置」页填一次 LLM 档案（地址 / 模型 / API Key）。0.4.0 的真机复测尚未完成，详见 [android/README-Android.md](android/README-Android.md)。构建方法、与电脑版的差异、已验证与未验证事项也在该文件中。
 
 ## 目录
 
@@ -84,6 +84,7 @@ android/       安卓壳（Chaquopy + WebView）与 APK
 ## 功能概览
 
 - **记录**：「饮食 / 运动」分段切换。饮食可输入文字描述，也可上传食物图片（最多 4 张，每张不超过 5 MB，自动压缩后上传）；AI 估算后生成草稿卡片，餐次通过下拉选择。
+- **自定义条目库（0.4.0）**：不想让 AI 估算时，可手动录入自己的食物（每份热量、克数、蛋白质／碳水／脂肪、份量说明）或运动（每次消耗热量、对应时长）。选中条目后按份数或分钟数「加入草稿」，与 AI 估算一样核对后再保存；运动按时长比例换算热量。数据只保存在本机，并包含在导出与清除中。
 - **每日**：大号热量差卡片，摄入与消耗并排，三大营养素分段条；明细按早餐 / 午餐 / 晚餐 / 加餐 / 运动分组，可前后翻日期，支持修改与删除。
 - **报告**：周 / 月报告，统计由程序完成，分数带进度条；可勾选交给 AI 做分析；历史报告可再次打开。
 - **身体数据**：分为「基础信息 / 日常与目标 / 代谢指标」，按生效日期保存历史版本（时间线展示），修改不会改写过去的报告。
@@ -101,6 +102,8 @@ android/       安卓壳（Chaquopy + WebView）与 APK
 ## 配置页能做的事
 
 - **LLM 档案**：多套，协议选 OpenAI 兼容或 Anthropic，填写地址、模型、Key、temperature、max_tokens；可设为默认、测试连接。
+- **预设提供商（0.4.0）**：表单顶部「预设提供商」可一键填入 DeepSeek、智谱 GLM、Kimi（月之暗面）、阿里云百炼（通义千问）、OpenAI、Anthropic、Google Gemini、OpenRouter、硅基流动、xAI、火山方舟（豆包）、Mistral、MiniMax 的接口地址与协议。预设的模型名仅作参考，模型会更新，请点「获取可用模型」向服务商查询最新列表，再从下拉中选择。
+- **获取可用模型（0.4.0）**：新增或编辑档案时，点「获取可用模型」会调用服务商的模型列表接口（OpenAI 协议 `GET /models`，Anthropic 协议 `GET /v1/models`）。未保存的档案也可直接查询，使用表单里临时填写的协议、地址与 Key。
 - **额外参数 extra_body**：JSON 对象，会合并进请求体。例如启用 Anthropic 原生联网搜索：{"tools":[{"type":"web_search_20250305","name":"web_search","max_uses":3}]}
 - **联网搜索**：SearXNG / Tavily / Brave / 不启用。搜索结果拼进提示词；搜索失败会跳过并在结果中提示，不中断估算。
 - **提示词模板**：系统提示词、用户模板、搜索查询模板，可单独恢复默认。
@@ -117,13 +120,13 @@ android/       安卓壳（Chaquopy + WebView）与 APK
 
 已通过的自动化测试（均在本机运行，退出码为 0）：
 
-- `python -m unittest tests.test_e2e`：55 项端到端测试。覆盖 LLM 档案增删改与 Key 脱敏、非法配置拦截、提示词覆盖与恢复、饮食估算（含搜索结果拼接与自定义提示词）、运动估算（Anthropic 协议）、extra_body 合并、搜索失败降级、AI 输出不合规返回 422、上游 500 返回 502、未配置 LLM 时的提示、保存与修改记录、热量差计算、身体数据版本、代谢估算、周/月报告（有无 AI 分析）、报告删除、静态页面与路径穿越防护、数据导出（不含 API Key 明文）、清除全部数据、本机访问口令校验、DNS rebinding 防护、CORS 收敛，以及前端结构契约与合规契约（同意层先于联网、协议页中英双语、免责声明）。
+- `python -m unittest tests.test_e2e`：68 项端到端测试（0.4.0 新增：自定义条目库增删改与校验、库条目记入日汇总、预设提供商列表、模型列表查询的 URL 与认证头、错误映射、导出与清除覆盖条目库、前端契约与双语文案）。此前覆盖：覆盖 LLM 档案增删改与 Key 脱敏、非法配置拦截、提示词覆盖与恢复、饮食估算（含搜索结果拼接与自定义提示词）、运动估算（Anthropic 协议）、extra_body 合并、搜索失败降级、AI 输出不合规返回 422、上游 500 返回 502、未配置 LLM 时的提示、保存与修改记录、热量差计算、身体数据版本、代谢估算、周/月报告（有无 AI 分析）、报告删除、静态页面与路径穿越防护、数据导出（不含 API Key 明文）、清除全部数据、本机访问口令校验、DNS rebinding 防护、CORS 收敛，以及前端结构契约与合规契约（同意层先于联网、协议页中英双语、免责声明）。
 - 前端 frontend/app.js 通过 node --check 语法检查。
 - 真实启动 `python -m backend serve`，健康检查返回正常，首页返回 200，四个 AI 任务已注册。
 
 **尚未验证的部分**
 
-- 没有在浏览器中逐个点击过 0.3.1 的页面。按钮交互、表格渲染、配色切换、以及首次启动的同意页需要你在浏览器里走一遍。
+- 没有在浏览器中逐个点击过 0.3.1 与 0.4.0 的页面。按钮交互、表格渲染、配色切换、以及首次启动的同意页需要你在浏览器里走一遍。
 - 没有接入真实大模型。测试全部使用本地模拟服务，AI 估算的准确度、提示词效果、各家协议的细节差异都需要用真实 Key 验证。图片识别同样只在模拟服务上测试。
 - 联网搜索只在模拟 SearXNG 上测试，Tavily 与 Brave 的适配代码未经真实请求验证。
 
@@ -134,6 +137,28 @@ android/       安卓壳（Chaquopy + WebView）与 APK
 - API Key 以明文存在本地 `data/config.json`，界面只显示末 4 位；请勿把该文件或 `data/` 目录分享或提交到公开仓库。
 
 ## 更新日志
+
+### v0.4.0（2026-10-13）
+
+自定义条目库（不用 AI 也能记录）：
+
+- 新增自定义食物：名称、每份热量、每份克数、蛋白质／碳水／脂肪、份量说明、备注
+- 新增自定义运动：名称、每次消耗热量、对应时长、备注
+- 选中条目后按份数（食物）或分钟数（运动）「加入草稿」，与 AI 估算共用同一套「核对后保存」的流程；运动按时长比例换算热量
+- 条目只保存在本机 SQLite；「导出全部数据」与「清除全部数据」已覆盖
+
+LLM 配置（接入更省事）：
+
+- 新增「预设提供商」：一键填入 13 家服务商的协议与接口地址——DeepSeek、智谱 GLM、Kimi（月之暗面）、阿里云百炼（通义千问）、OpenAI、Anthropic、Google Gemini、OpenRouter、硅基流动、xAI、火山方舟（豆包）、Mistral、MiniMax
+- 新增「获取可用模型」：按 OpenAI 协议 `GET /models` 或 Anthropic 协议 `GET /v1/models` 查询上游模型列表并下拉选择；未保存的档案也能用表单里临时填写的协议、地址与 Key 查询
+- 预设的模型名仅作初始参考，模型更新较快，请以「获取可用模型」的结果为准
+
+打包与测试：
+
+- 版本号更新为 0.4.0（versionCode 7），APK 重新构建并通过 v2/v3 签名校验
+- 端到端测试增至 68 项：新增自定义条目库的增删改与范围校验、库条目记入日汇总、预设提供商列表、模型列表查询的 URL 与认证头、错误映射（400/502）、导出与清除覆盖条目库、前端契约与双语文案
+- 0.4.0 重打一次：《隐私政策》《用户协议》的占位符已填入开发者主体（熊伟枫）、联系邮箱（1242670353@qq.com）与管辖法院（四川省宜宾市中级人民法院），中英文两边同步；协议页版本行改为「版本：0.4.0　生效日期：2026年10月13日」；应用市场详情页链接仍保留占位，待上架时补填
+- 电脑版发布包改用脚本打包（`python .android-build/make_windows_zip.py`）：包内补入 `privacy.html` 与 `terms.html`（0.3.0/0.3.1 的包漏打了协议页，电脑版点「查看隐私政策」会 404），并强制校验 `data/`、密钥等私有内容不入包
 
 ### v0.3.1（2026-10-12）
 
@@ -206,7 +231,7 @@ The program provides the rule framework. Food calories, exercise burn, basal met
 
 ### Download and unzip
 
-The desktop release is `calorie-tracker-0.3.0-windows.zip` (about 65 KB). It contains program code only, no personal data. Unzip it anywhere, e.g. `C:\Apps\calorie-tracker`.
+The desktop release is `calorie-tracker-0.4.0-windows.zip` (about 107 KB). It contains program code only, no personal data, including both the Privacy Policy and the User Agreement pages. Unzip it anywhere, e.g. `C:\Apps\calorie-tracker`. To rebuild it: `python .android-build/make_windows_zip.py`.
 
 ### Requirements
 
@@ -235,13 +260,13 @@ By default, data lives in `data/` inside the program folder: `ct.db` holds your 
 
 ## Android APK
 
-The repository also ships a packaged Android app (0.3.0). The APK embeds the Python runtime and backend, so **a computer is not needed**. Data is stored in the app's private storage on the phone.
+The repository also ships a packaged Android app (0.4.0). The APK embeds the Python runtime and backend, so **a computer is not needed**. Data is stored in the app's private storage on the phone. First launch shows the Privacy Policy and User Agreement consent screen; the bilingual pages ship inside the APK.
 
 ```
-android/CalorieTracker-0.3.0-arm64.apk   about 22.1 MB, arm64-v8a only, Android 7.0+
+android/CalorieTracker-0.4.0-arm64.apk   about 22.1 MB, arm64-v8a only, Android 7.0+
 ```
 
-On first use, enter one LLM profile (URL / model / API key) in the Settings page. Real-device testing of 0.3.0 is not finished yet. See [android/README-Android.md](android/README-Android.md) for build steps, differences from the desktop version, and what has and has not been verified.
+On first use, enter one LLM profile (URL / model / API key) in the Settings page. Real-device testing of 0.4.0 is not finished yet. See [android/README-Android.md](android/README-Android.md) for build steps, differences from the desktop version, and what has and has not been verified.
 
 ## Project layout
 
@@ -310,7 +335,7 @@ Automated tests that passed locally (exit code 0):
 
 **Not yet verified**
 
-- The 0.3.1 pages have not been clicked through one by one in a real browser. Button behavior, table rendering, theme switching and the new first-launch consent screen need a manual check.
+- The 0.3.1 and 0.4.0 pages have not been clicked through one by one in a real browser. Button behavior, table rendering, theme switching and the new first-launch consent screen need a manual check.
 - No real LLM has been connected. All tests use local mock services, so estimation accuracy, prompt quality and differences between provider protocols must be checked with a real key. Image recognition has only been tested against the mock service.
 - Web search was tested only against a mock SearXNG. The Tavily and Brave adapters have not been verified with real requests.
 
@@ -321,6 +346,28 @@ Automated tests that passed locally (exit code 0):
 - The API key is stored in plain text in the local `data/config.json`; the UI shows only the last 4 characters. Do not share or commit that file or the `data/` folder to a public repository.
 
 ## Changelog
+
+### v0.4.0 (2026-10-13)
+
+Custom food & exercise library (log without AI):
+
+- New custom foods: name, energy per serving, grams per serving, protein/carbs/fat, serving description, notes
+- New custom exercises: name, energy per session, matching duration, notes
+- Pick an item and "Add to draft" by servings (foods) or minutes (exercises); it then follows the same review-and-save flow as AI estimates, with exercise energy converted by duration
+- Items live only in the local SQLite file; "Export all data" and "Clear all data" cover them
+
+LLM setup (easier onboarding):
+
+- New "Provider preset": one tap fills the protocol and base URL for 13 providers — DeepSeek, Zhipu GLM, Kimi (Moonshot), Alibaba Cloud Bailian (Qwen), OpenAI, Anthropic, Google Gemini, OpenRouter, SiliconFlow, xAI, Volcano Ark (Doubao), Mistral and MiniMax
+- New "Fetch available models": queries the upstream model list via OpenAI-style `GET /models` or Anthropic-style `GET /v1/models` and lets you pick from a dropdown; a profile that is not saved yet can query with the protocol, URL and key typed in the form
+- Preset model names are only a starting point; models change quickly, so trust the "Fetch available models" result
+
+Packaging and tests:
+
+- Version updated to 0.4.0 (versionCode 7); the APK was rebuilt and verified against the v2/v3 signature schemes
+- End-to-end tests grew to 68: custom-library CRUD and range validation, library items counted in the daily summary, the provider preset list, model-list URL and auth headers, error mapping (400/502), export and clear covering the library, and the front-end contract and bilingual copy
+- 0.4.0 rebuilt once more: the placeholders in the Privacy Policy and User Agreement were filled with the developer identity (熊伟枫 / Xiong Weifeng), the contact email (1242670353@qq.com) and the court of jurisdiction (四川省宜宾市中级人民法院 / Yibin Intermediate People's Court of Sichuan), in both languages; the page header now reads "版本：0.4.0　生效日期：2026年10月13日". The app-store listing link is still a placeholder, to be filled at submission time
+- The desktop package is now produced by a script (`python .android-build/make_windows_zip.py`): it adds `privacy.html` and `terms.html`, which were missing from the 0.3.0/0.3.1 zips (the desktop "view privacy policy" links 404'd), and it refuses to pack `data/` or any signing material
 
 ### v0.3.1 (2026-10-12)
 

@@ -2,5 +2,6 @@
 <resources>
     <color name="bg">#FFEEF0E6</color>
     <color name="accent">#FF2F5D2C</color>
-    <color name="ic_launcher_background">#FFFF7043</color>
+    <!-- 与 docs/icon-source.png 底板顶部同色；自适应图标实际用的是 @mipmap/ic_launcher_background -->
+    <color name="ic_launcher_background">#FF121E31</color>
 </resources>

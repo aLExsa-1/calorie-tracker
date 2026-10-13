@@ -80,6 +80,19 @@ def make_handler(state: MockState):
 
         def do_GET(self):
             url = urlparse(self.path)
+            if url.path.endswith("/models"):
+                # OpenAI: GET /v1/models；Anthropic: GET /v1/models?limit=...
+                auth = self.headers.get("Authorization") or self.headers.get("x-api-key") or ""
+                version = self.headers.get("anthropic-version") or ""
+                state.requests.append({"kind": "models", "path": self.path, "auth": auth,
+                                       "anthropic_version": version})
+                if state.fail_next > 0:
+                    state.fail_next -= 1
+                    return self._json(500, {"error": {"message": "mock models failure"}})
+                return self._json(200, {"object": "list", "data": [
+                    {"id": "mock-model-b", "object": "model"},
+                    {"id": "mock-model-a", "display_name": "Mock Model A", "object": "model"},
+                ]})
             if url.path == "/search":
                 q = parse_qs(url.query).get("q", [""])[0]
                 state.requests.append({"kind": "search", "q": q})

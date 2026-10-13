@@ -14,9 +14,10 @@ from urllib.parse import parse_qs, unquote, urlparse
 
 from .config import ConfigError
 from .engine import ApiError, Engine
+from .providers import providers_view
 from .schemas import SchemaError
 
-VERSION = "0.3.1"
+VERSION = "0.4.0"
 WEB_DIR = Path(__file__).resolve().parent.parent / "frontend"
 
 
@@ -94,7 +95,20 @@ def _routes(e: Engine):
         ("PUT", r"/api/config/prompts/(\w+)", lambda m, q, b: (c.set_prompt(m[1], b), (200, c.public()))[1]),
         ("DELETE", r"/api/config/prompts/(\w+)", lambda m, q, b: (c.reset_prompt(m[1]), (200, c.public()))[1]),
         ("POST", r"/api/llm/test", lambda m, q, b: (200, e.test_llm(b.get("id")))),
+        ("POST", r"/api/llm/models", lambda m, q, b: (200, e.list_models(b))),
+        ("GET", r"/api/providers", lambda m, q, b: (200, {"providers": providers_view()})),
         ("POST", r"/api/search/test", lambda m, q, b: (200, e.test_search(str(b.get("query") or "")))),
+
+        # 自定义条目库：用户手工维护的食物 / 运动，不经 AI 估算
+        ("GET", r"/api/library", lambda m, q, b: (200, e.library())),
+        ("POST", r"/api/library/foods",
+         lambda m, q, b: (201, {"food": e.save_custom_food(b)})),
+        ("DELETE", r"/api/library/foods/(\d+)",
+         lambda m, q, b: (e.delete_custom_food(int(m[1])), (200, {"ok": True}))[1]),
+        ("POST", r"/api/library/activities",
+         lambda m, q, b: (201, {"activity": e.save_custom_activity(b)})),
+        ("DELETE", r"/api/library/activities/(\d+)",
+         lambda m, q, b: (e.delete_custom_activity(int(m[1])), (200, {"ok": True}))[1]),
 
         ("GET", r"/api/profile", lambda m, q, b: (200, {"profile": e.profile_on(_day(q.get("date")))})),
         ("GET", r"/api/profile/history", lambda m, q, b: (200, {"history": s.profile_history()})),

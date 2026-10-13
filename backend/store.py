@@ -1,4 +1,4 @@
-"""SQLite 存储：身体数据历史版本、饮食/运动记录、报告。"""
+"""SQLite 存储：身体数据历史版本、饮食/运动记录、报告、自定义条目库。"""
 from __future__ import annotations
 
 import json
@@ -35,6 +35,28 @@ CREATE TABLE IF NOT EXISTS entries (
     updated_at TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_entries_date ON entries(date);
+CREATE TABLE IF NOT EXISTS custom_foods (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    kcal REAL NOT NULL,
+    grams REAL,
+    protein_g REAL,
+    carb_g REAL,
+    fat_g REAL,
+    serving_label TEXT,
+    notes TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS custom_activities (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    kcal REAL NOT NULL,
+    minutes REAL,
+    notes TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+);
 CREATE TABLE IF NOT EXISTS reports (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     period TEXT NOT NULL,
@@ -49,6 +71,9 @@ CREATE TABLE IF NOT EXISTS reports (
 ENTRY_COLUMNS = ("date", "meal", "kind", "name", "grams", "minutes", "kcal", "protein_g",
                  "carb_g", "fat_g", "confidence", "basis", "raw_text", "llm_name")
 EDITABLE = ("name", "meal", "grams", "minutes", "kcal", "protein_g", "carb_g", "fat_g")
+
+FOOD_COLUMNS = ("name", "kcal", "grams", "protein_g", "carb_g", "fat_g", "serving_label", "notes")
+ACTIVITY_COLUMNS = ("name", "kcal", "minutes", "notes")
 
 
 def _now() -> str:
@@ -79,22 +104,30 @@ class Store:
                 "SELECT id, effective_date, data, created_at FROM profiles ORDER BY effective_date, id").fetchall()
             entries = self.conn.execute(
                 "SELECT * FROM entries ORDER BY date, id").fetchall()
+            foods = self.conn.execute(
+                "SELECT * FROM custom_foods ORDER BY id").fetchall()
+            activities = self.conn.execute(
+                "SELECT * FROM custom_activities ORDER BY id").fetchall()
             reports = self.conn.execute(
                 "SELECT * FROM reports ORDER BY id").fetchall()
         return {
             "profiles": [{"id": r["id"], "effective_date": r["effective_date"],
                           "created_at": r["created_at"], "data": json.loads(r["data"])} for r in profiles],
             "entries": [dict(r) for r in entries],
+            "custom_foods": [dict(r) for r in foods],
+            "custom_activities": [dict(r) for r in activities],
             "reports": [{"id": r["id"], "period": r["period"], "start": r["start"], "end": r["end"],
                          "created_at": r["created_at"], "stats": json.loads(r["stats"]),
                          "analysis": json.loads(r["analysis"]) if r["analysis"] else None} for r in reports],
         }
 
     def clear_all(self) -> dict:
-        """删除全部本地数据：身体数据版本、饮食/运动记录、报告。返回各类删除条数。"""
+        """删除全部本地数据：身体数据版本、饮食/运动记录、自定义条目库、报告。返回各类删除条数。"""
         with self._lock:
             counts = {}
-            for table, key in (("profiles", "profiles"), ("entries", "entries"), ("reports", "reports")):
+            for table, key in (("profiles", "profiles"), ("entries", "entries"),
+                               ("custom_foods", "custom_foods"), ("custom_activities", "custom_activities"),
+                               ("reports", "reports")):
                 counts[key] = self.conn.execute(f"SELECT COUNT(*) AS n FROM {table}").fetchone()["n"]
                 self.conn.execute(f"DELETE FROM {table}")
             self.conn.commit()
@@ -165,6 +198,83 @@ class Store:
     def delete_entry(self, eid: int) -> bool:
         with self._lock:
             cur = self.conn.execute("DELETE FROM entries WHERE id = ?", (eid,))
+            self.conn.commit()
+        return cur.rowcount > 0
+
+    # ---------- 自定义条目库（用户手工维护的食物 / 运动） ----------
+    def list_custom_foods(self) -> list[dict]:
+        with self._lock:
+            rows = self.conn.execute("SELECT * FROM custom_foods ORDER BY name, id").fetchall()
+        return [dict(r) for r in rows]
+
+    def get_custom_food(self, fid: int) -> dict | None:
+        with self._lock:
+            row = self.conn.execute("SELECT * FROM custom_foods WHERE id = ?", (fid,)).fetchone()
+        return dict(row) if row else None
+
+    def upsert_custom_food(self, fid: int | None, fields: dict) -> int:
+        values = {c: fields.get(c) for c in FOOD_COLUMNS}
+        now = _now()
+        with self._lock:
+            if fid is None:
+                values.update({"created_at": now, "updated_at": now})
+                cols = ", ".join(values)
+                marks = ", ".join("?" for _ in values)
+                cur = self.conn.execute(
+                    f"INSERT INTO custom_foods ({cols}) VALUES ({marks})", list(values.values()))
+                self.conn.commit()
+                return int(cur.lastrowid)
+            existing = self.conn.execute("SELECT id FROM custom_foods WHERE id = ?", (fid,)).fetchone()
+            if not existing:
+                return 0
+            values["updated_at"] = now
+            sets = ", ".join(f"{k} = ?" for k in values)
+            cur = self.conn.execute(
+                f"UPDATE custom_foods SET {sets} WHERE id = ?", [*values.values(), fid])
+            self.conn.commit()
+            return fid if cur.rowcount else 0
+
+    def delete_custom_food(self, fid: int) -> bool:
+        with self._lock:
+            cur = self.conn.execute("DELETE FROM custom_foods WHERE id = ?", (fid,))
+            self.conn.commit()
+        return cur.rowcount > 0
+
+    def list_custom_activities(self) -> list[dict]:
+        with self._lock:
+            rows = self.conn.execute("SELECT * FROM custom_activities ORDER BY name, id").fetchall()
+        return [dict(r) for r in rows]
+
+    def get_custom_activity(self, aid: int) -> dict | None:
+        with self._lock:
+            row = self.conn.execute("SELECT * FROM custom_activities WHERE id = ?", (aid,)).fetchone()
+        return dict(row) if row else None
+
+    def upsert_custom_activity(self, aid: int | None, fields: dict) -> int:
+        values = {c: fields.get(c) for c in ACTIVITY_COLUMNS}
+        now = _now()
+        with self._lock:
+            if aid is None:
+                values.update({"created_at": now, "updated_at": now})
+                cols = ", ".join(values)
+                marks = ", ".join("?" for _ in values)
+                cur = self.conn.execute(
+                    f"INSERT INTO custom_activities ({cols}) VALUES ({marks})", list(values.values()))
+                self.conn.commit()
+                return int(cur.lastrowid)
+            existing = self.conn.execute("SELECT id FROM custom_activities WHERE id = ?", (aid,)).fetchone()
+            if not existing:
+                return 0
+            values["updated_at"] = now
+            sets = ", ".join(f"{k} = ?" for k in values)
+            cur = self.conn.execute(
+                f"UPDATE custom_activities SET {sets} WHERE id = ?", [*values.values(), aid])
+            self.conn.commit()
+            return aid if cur.rowcount else 0
+
+    def delete_custom_activity(self, aid: int) -> bool:
+        with self._lock:
+            cur = self.conn.execute("DELETE FROM custom_activities WHERE id = ?", (aid,))
             self.conn.commit()
         return cur.rowcount > 0
 

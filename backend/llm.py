@@ -110,6 +110,63 @@ def call_llm(profile: dict, system: str, user: str, timeout: float = 120, images
     raise LLMError(f"不支持的协议：{protocol}")
 
 
+def _get(url: str, headers: dict, timeout: float) -> dict:
+    req = urllib.request.Request(url, method="GET", headers=headers)
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
+            raw = resp.read().decode("utf-8")
+    except urllib.error.HTTPError as exc:
+        with exc:
+            detail = exc.read().decode("utf-8", errors="replace")[:400]
+        raise LLMError(f"HTTP {exc.code}：{detail}")
+    except (urllib.error.URLError, TimeoutError, OSError) as exc:
+        raise LLMError(f"请求失败：{exc}")
+    try:
+        return json.loads(raw)
+    except json.JSONDecodeError:
+        raise LLMError("接口返回的不是 JSON")
+
+
+def list_models(profile: dict, timeout: float = 30) -> list[dict]:
+    """查询服务商的可用模型列表，返回按名称排序的 [{id, name}]。
+
+    - OpenAI 协议：GET {base}/models，Bearer 认证；
+    - Anthropic 协议：GET {base}/v1/models（base 以 /v1 结尾时为 {base}/models），
+      x-api-key + anthropic-version 认证。
+    """
+    protocol = profile.get("protocol")
+    base = str(profile.get("base_url", "")).rstrip("/")
+    key = str(profile.get("api_key") or "").strip()
+    if not base:
+        raise LLMError("缺少接口地址")
+    if not key:
+        raise LLMError("缺少 API Key")
+
+    if protocol == "openai":
+        url = f"{base}/models"
+        headers = {"Authorization": f"Bearer {key}"}
+    elif protocol == "anthropic":
+        url = f"{base}/models?limit=1000" if base.endswith("/v1") else f"{base}/v1/models?limit=1000"
+        headers = {"x-api-key": key, "anthropic-version": "2023-06-01"}
+    else:
+        raise LLMError(f"不支持的协议：{protocol}")
+
+    data = _get(url, headers, timeout)
+    items = data.get("data") if isinstance(data, dict) else None
+    if not isinstance(items, list):
+        raise LLMError(f"响应结构不符合模型列表格式：{str(data)[:300]}")
+    models = []
+    for it in items:
+        if isinstance(it, dict) and it.get("id"):
+            mid = str(it["id"])
+            name = str(it.get("display_name") or it.get("name") or mid)
+            models.append({"id": mid, "name": name})
+    if not models:
+        raise LLMError("接口未返回任何模型")
+    models.sort(key=lambda m: m["id"].lower())
+    return models
+
+
 def _anthropic_content(user: str, images: list) -> object:
     if not images:
         return user

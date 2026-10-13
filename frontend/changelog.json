@@ -1,35 +1,51 @@
 {
-  "version": "0.3.1",
-  "date": "2026-10-12",
+  "version": "0.4.0",
+  "date": "2026-10-13",
   "items": [
-    "新增首次启动同意页：完整阅读并勾选同意《隐私政策》与《用户协议》后才能开始使用；同意之前不向任何服务器发送您的数据",
-    "新增《隐私政策》与《用户协议》完整文档（中英文双语），设置页「隐私与协议」可随时查看",
-    "新增「数据管理」：一键导出全部数据为 JSON（不含 API Key 明文）、一键清除本机全部数据、撤回隐私政策同意",
-    "隐私政策如实写明：开发者不运营服务器、不收集个人信息；使用 AI 估算时数据会发送到你自己配置的第三方接口，请优先使用 https 地址",
-    "AI 估算草稿与报告分析加「AI 生成，仅供参考」标识；报告页与设置页加免责说明：不构成医疗建议",
-    "安卓：关闭应用数据备份，健康记录与 API Key 不再可能被 adb／云备份导出",
-    "安卓：默认禁止明文 HTTP 请求，仅对本机回环地址放行（自填的 http:// 接口会被系统阻断）",
-    "安卓：WebView 禁止加载混合内容（HTTPS 页面中的 HTTP 资源）",
-    "安卓：本地内置服务增加随机访问口令校验，设备上其他应用无法再直接调用本机接口",
-    "安卓：启用 v3 签名方案，补充英文文案与自适应图标单色层",
-    "修复：报告无法删除（新增删除报告接口）",
-    "版本号更新为 0.3.1"
+    "新增「自定义条目库」：手动录入自己的食物（每份热量、克数、蛋白质／碳水／脂肪、份量说明）与运动（每次消耗热量、对应时长），数据只保存在本机",
+    "库条目可「加入草稿」：食物按份数缩放、运动按时长比例换算热量，与 AI 估算走同一套「核对后保存」的流程",
+    "LLM 档案新增「预设提供商」：一键填入 DeepSeek、智谱 GLM、Kimi、阿里云百炼、OpenAI、Anthropic、Google Gemini、OpenRouter、硅基流动、xAI、火山方舟、Mistral、MiniMax 的协议与接口地址",
+    "LLM 档案新增「获取可用模型」：向服务商查询模型列表，从下拉中选择上游返回的模型名；未保存的档案也可用表单里填写的协议、地址与 Key 查询",
+    "预设里的模型名仅作初始参考，模型会随厂商更新，请以「获取可用模型」的结果为准",
+    "数据导出与「清除全部数据」同时包含自定义条目库",
+    "应用图标更新：全新深色底双环无限符号图标（绿到橙渐变），安卓端各分辨率同步替换",
+    "版本号更新为 0.4.0"
   ],
   "items_en": [
-    "New first-launch consent screen: the Privacy Policy and User Agreement must be read and accepted before use; before you agree, none of your data is sent to any server",
-    "New full Privacy Policy and User Agreement documents (bilingual), reachable any time from Settings → Privacy & terms",
-    "New Data management: export all data as JSON (without API key secrets), clear all local data in one step, and withdraw privacy consent",
-    "The Privacy Policy states plainly that the developer runs no server and collects nothing; AI estimates send data to the third-party endpoint you configure, so prefer an https address",
-    "AI estimate drafts and report analyses now carry an \"AI-generated, for reference only\" label, and reports and Settings show a disclaimer that this is not medical advice",
-    "Android: app data backup disabled, so health records and the API key can no longer be pulled out via adb or cloud backup",
-    "Android: cleartext HTTP blocked by default and allowed only for the loopback address (an http:// endpoint you enter is blocked by the system)",
-    "Android: the WebView no longer loads mixed content (HTTP resources inside HTTPS pages)",
-    "Android: the built-in local service now requires a random access token, so other apps on the device can no longer call the local API",
-    "Android: v3 signature scheme enabled, English strings and a monochrome adaptive-icon layer added",
-    "Fixed: reports could not be deleted (a delete-report endpoint was added)",
-    "Version updated to 0.3.1"
+    "New \"Custom food & exercise library\": enter your own foods (energy per serving, grams, protein/carbs/fat, serving description) and exercises (energy per session, duration); stored only on this device",
+    "Library items can be added to the draft: foods scale by servings and exercises convert energy by duration, then go through the same review-before-saving flow as AI estimates",
+    "New \"Provider preset\" in LLM profiles: one tap fills the protocol and base URL for DeepSeek, Zhipu GLM, Kimi, Alibaba Cloud Bailian, OpenAI, Anthropic, Google Gemini, OpenRouter, SiliconFlow, xAI, Volcano Ark, Mistral and MiniMax",
+    "New \"Fetch available models\" in LLM profiles: query the provider for its model list and pick the returned name from a dropdown; unsaved profiles can query with the protocol, URL and key typed in the form",
+    "Preset model names are only a starting point; models change over time, so trust the \"Fetch available models\" result",
+    "Data export and \"clear all data\" now also cover the custom library",
+    "App icon updated: a new dark-background infinity-loop icon with a green-to-orange gradient, replaced across all Android densities",
+    "Version updated to 0.4.0"
   ],
   "history": [
+    {
+      "version": "0.4.0",
+      "date": "2026-10-13",
+      "items": [
+        "新增「自定义条目库」：手动录入自己的食物（每份热量、克数、蛋白质／碳水／脂肪、份量说明）与运动（每次消耗热量、对应时长），数据只保存在本机",
+        "库条目可「加入草稿」：食物按份数缩放、运动按时长比例换算热量，与 AI 估算走同一套「核对后保存」的流程",
+        "LLM 档案新增「预设提供商」：一键填入 DeepSeek、智谱 GLM、Kimi、阿里云百炼、OpenAI、Anthropic、Google Gemini、OpenRouter、硅基流动、xAI、火山方舟、Mistral、MiniMax 的协议与接口地址",
+        "LLM 档案新增「获取可用模型」：向服务商查询模型列表，从下拉中选择上游返回的模型名；未保存的档案也可用表单里填写的协议、地址与 Key 查询",
+        "预设里的模型名仅作初始参考，模型会随厂商更新，请以「获取可用模型」的结果为准",
+        "数据导出与「清除全部数据」同时包含自定义条目库",
+        "应用图标更新：全新深色底双环无限符号图标（绿到橙渐变），安卓端各分辨率同步替换",
+        "版本号更新为 0.4.0"
+      ],
+      "items_en": [
+        "New \"Custom food & exercise library\": enter your own foods (energy per serving, grams, protein/carbs/fat, serving description) and exercises (energy per session, duration); stored only on this device",
+        "Library items can be added to the draft: foods scale by servings and exercises convert energy by duration, then go through the same review-before-saving flow as AI estimates",
+        "New \"Provider preset\" in LLM profiles: one tap fills the protocol and base URL for DeepSeek, Zhipu GLM, Kimi, Alibaba Cloud Bailian, OpenAI, Anthropic, Google Gemini, OpenRouter, SiliconFlow, xAI, Volcano Ark, Mistral and MiniMax",
+        "New \"Fetch available models\" in LLM profiles: query the provider for its model list and pick the returned name from a dropdown; unsaved profiles can query with the protocol, URL and key typed in the form",
+        "Preset model names are only a starting point; models change over time, so trust the \"Fetch available models\" result",
+        "Data export and \"clear all data\" now also cover the custom library",
+        "App icon updated: a new dark-background infinity-loop icon with a green-to-orange gradient, replaced across all Android densities",
+        "Version updated to 0.4.0"
+      ]
+    },
     {
       "version": "0.3.1",
       "date": "2026-10-12",

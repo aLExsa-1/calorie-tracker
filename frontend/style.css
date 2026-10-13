@@ -297,6 +297,17 @@ details.advanced { margin-top: var(--sp-3); }
 .llm-meta { color: var(--muted); font-size: var(--fs-sm); display: flex; flex-wrap: wrap; gap: 2px 12px; }
 .llm-meta small { overflow-wrap: anywhere; word-break: break-all; }
 .llm-actions { display: flex; flex-wrap: wrap; gap: var(--sp-2); margin-top: 2px; }
+.lib-list { display: grid; gap: var(--sp-2); margin-bottom: var(--sp-3); }
+.lib-item { background: var(--tile); border-radius: var(--r-md); padding: var(--sp-3) var(--sp-4); display: grid; gap: 8px; }
+.lib-main { display: grid; gap: 2px; min-width: 0; }
+.lib-main b { font-size: var(--fs-md); overflow-wrap: anywhere; }
+.lib-main small { color: var(--muted); font-size: var(--fs-sm); overflow-wrap: anywhere; }
+.lib-use { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--sp-2); }
+.lib-use label { display: grid; gap: 4px; font-size: var(--fs-xs); color: var(--muted); }
+.lib-use input { width: 96px; height: 38px; }
+.lib-actions { display: flex; flex-wrap: wrap; gap: var(--sp-2); }
+#llmModelPick { margin-top: 6px; }
+#llmModelsHint:empty { display: none; }
 .swatches { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--sp-2); }
 .swatch { display: grid; gap: 8px; justify-items: center; padding: var(--sp-3) var(--sp-2); border-radius: var(--r-md); background: var(--tile); border: 2px solid transparent; min-height: 0; }
 .swatch[aria-checked="true"] { border-color: var(--primary); background: var(--card); box-shadow: var(--shadow); }
