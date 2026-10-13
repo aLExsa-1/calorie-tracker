@@ -1,0 +1,308 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="referrer" content="no-referrer">
+<meta name="theme-color" content="#eef0e6">
+<meta name="description" content="热量管理（Calorie Tracker）隐私政策与个人信息权利行使说明。开发者：熊伟枫。">
+<title>隐私政策 · 热量管理（Calorie Tracker）</title>
+<style>
+:root{--bg:#eef0e6;--card:#fbfcf7;--ink:#1f2a1f;--muted:#667063;--line:#e0e4d5;--primary:#2f5d2c;--primary-soft:#dfead6;--warn:#a4640f;--warn-soft:#fbefd6;--r-lg:22px;--r-md:16px;--r-sm:12px}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.75 -apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans SC","PingFang SC","Microsoft YaHei",sans-serif;padding:0 16px 48px;-webkit-text-size-adjust:100%}
+.wrap{max-width:760px;margin:0 auto}
+header{padding:28px 0 12px}
+h1{font-size:23px;margin:0 0 6px}
+h2{font-size:17px;margin:28px 0 8px;padding-top:14px;border-top:1px solid var(--line)}
+h3{font-size:15px;margin:18px 0 6px}
+p,li{font-size:14.5px}
+ul,ol{padding-left:22px;margin:8px 0}
+li{margin:4px 0}
+.meta{color:var(--muted);font-size:13px;margin:2px 0}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r-lg);padding:16px 18px;margin:14px 0}
+.warn{background:var(--warn-soft);border-color:#e8d3a8;border-radius:var(--r-md)}
+.warn h2,.warn h3{border:0;margin-top:0;color:#7d4c07}
+code{background:#eff1e6;border-radius:6px;padding:1px 6px;font-size:13.5px;word-break:break-all}
+table{width:100%;border-collapse:collapse;margin:10px 0;font-size:14px}
+th,td{border:1px solid var(--line);padding:7px 9px;text-align:left;vertical-align:top}
+th{background:#f1f3e8;font-weight:600}
+a{color:var(--primary)}
+.toc{display:flex;flex-wrap:wrap;gap:6px 12px;padding:10px 0 0;font-size:13.5px}
+.top{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:8px 0 0}
+.lang{display:flex;gap:6px;margin-left:auto}
+.lang button{background:transparent;border:1px solid var(--line);border-radius:999px;padding:5px 13px;font-size:13px;color:var(--muted);cursor:pointer;font-family:inherit}
+.lang button[aria-pressed="true"]{background:var(--primary-soft);border-color:var(--primary);color:var(--primary);font-weight:600}
+.anchor{scroll-margin-top:16px}
+footer{margin-top:34px;padding-top:14px;border-top:1px solid var(--line);color:var(--muted);font-size:13px}
+[hidden]{display:none!important}
+@media print{body{background:#fff}.lang{display:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div class="top">
+    <a href="index.html">返回首页</a>
+    <span class="lang">
+      <button type="button" data-lang="zh-CN" aria-pressed="true">简体中文</button>
+      <button type="button" data-lang="en" aria-pressed="false">English</button>
+    </span>
+  </div>
+  <h1>隐私政策</h1>
+  <p class="meta"><strong>隐私政策 / Privacy Policy</strong></p>
+  <p class="meta">应用名称：热量管理（Calorie Tracker）　应用包名：<code>com.calorietracker.app</code></p>
+  <p class="meta">开发者与个人信息处理者：熊伟枫（个人开发者）</p>
+  <p class="meta">应用版本：0.4.0　生效日期：2026年10月13日　最近更新日期：2026年10月13日</p>
+</header>
+
+<!-- ==================== 简体中文 ==================== -->
+<div data-lang-block="zh-CN">
+
+  <nav class="toc" aria-label="目录">
+    <a href="#collect">1. 收集哪些信息</a>
+    <a href="#store">2. 存储与保护</a>
+    <a href="#share">3. 对外提供与出境</a>
+    <a href="#sdk">4. 第三方 SDK 清单</a>
+    <a href="#permission">5. 系统权限</a>
+    <a href="#rights">6. 您的权利（如何行使）</a>
+    <a href="#minor">7. 未成年人</a>
+    <a href="#update">8. 政策更新</a>
+    <a href="#contact">9. 联系我们</a>
+  </nav>
+
+  <div class="card warn">
+    <h2>请先阅读</h2>
+    <p>本应用是一款<strong>纯本地运行</strong>的个人热量与运动记录工具。开发者<strong>不运营任何服务器</strong>，不收集、不上传、不存储您的任何个人信息。</p>
+    <p style="margin-bottom:0">您填写的身体数据、饮食与运动记录全部保存在<strong>您自己设备的应用私有目录</strong>中。唯一会联网的动作，是把数据发送到<strong>您自己在「设置」页配置的第三方大模型（AI）接口或搜索服务</strong>——这一点在第 3 节详细说明，请务必阅读。</p>
+  </div>
+
+  <h2 id="collect" class="anchor">1. 我们收集哪些信息</h2>
+  <p>本应用<strong>不设账号体系</strong>，无需注册登录，也不要求您提供手机号或邮箱。以下信息由您主动填写或由您发起的 AI 估算产生，全部存储在您的设备上，开发者无法访问：</p>
+  <table>
+    <tr><th>类别</th><th>具体内容</th><th>来源</th></tr>
+    <tr><td>身体数据</td><td>生理性别、年龄、身高、体重、日常活动描述、目标描述、基础代谢（BMR）、维持消耗，以及“额外信息”文本字段</td><td>您手动填写，或您点击“让 AI 估算”后由 AI 生成草稿</td></tr>
+    <tr><td>饮食记录</td><td>日期、餐次、食物名称、克数、热量、蛋白质／碳水／脂肪、您输入的原始描述文字、置信度与估算依据</td><td>您手动输入，或由 AI 估算后经您确认保存</td></tr>
+    <tr><td>运动记录</td><td>日期、运动名称、时长（分钟）、消耗热量、置信度与估算依据</td><td>同上</td></tr>
+    <tr><td>食物照片</td><td>您主动选择的食物图片（最多 4 张，单张压缩后上传）</td><td>您从系统文件选择器主动选择。应用<strong>不申请存储权限</strong>，也不读取相册中的其他照片</td></tr>
+    <tr><td>报告数据</td><td>周／月统计结果，以及（可选的）AI 分析文本</td><td>程序统计生成</td></tr>
+    <tr><td>接口凭据</td><td>您配置的大模型／搜索服务的接口地址、模型名、API Key</td><td>您手动填写</td></tr>
+    <tr><td>界面偏好</td><td>界面语言、配色主题</td><td>自动记录在设备本地存储中</td></tr>
+  </table>
+  <p><strong>本应用不收集：</strong>设备标识符（IMEI／OAID／Android ID 等）、手机号、通讯录、短信、精确或粗略地理位置、应用安装列表、剪贴板内容，也不进行任何用户行为统计、用户画像、个性化推荐或广告追踪。</p>
+  <p><strong>本应用不包含任何第三方广告、统计、推送或崩溃上报 SDK。</strong></p>
+
+  <h2 id="store" class="anchor">2. 信息如何存储与保护</h2>
+  <ul>
+    <li><strong>存储位置：</strong>安卓版保存在应用私有目录 <code>/data/data/com.calorietracker.app/files/data/</code>，其中 <code>ct.db</code> 为记录数据库，<code>config.json</code> 为配置（含明文 API Key）。其他应用无法读取该目录。电脑版保存在程序目录下的 <code>data/</code> 文件夹。</li>
+    <li><strong>不会上传到开发者：</strong>开发者没有服务器，也没有任何后台上传通道。</li>
+    <li><strong>本地服务：</strong>安卓版会在设备本机启动一个内部服务（仅监听 <code>127.0.0.1</code> 回环地址，端口 <code>8787</code>），用于界面与本地数据库通信。该端口不对局域网或互联网开放。</li>
+    <li><strong>保留期限：</strong>数据一直保留在您的设备上，直到您自行删除。卸载应用会删除全部数据。</li>
+    <li><strong>安全提示：</strong>API Key 以明文形式保存在上述配置文件中。请勿将 <code>data/</code> 目录或导出文件分享给他人；请为设备设置锁屏密码。</li>
+  </ul>
+
+  <h2 id="share" class="anchor">3. 信息如何对外提供（重要）</h2>
+  <p>这是本应用唯一的对外数据传输通道，<strong>由您主动配置并触发</strong>：</p>
+  <ul>
+    <li>当您点击「AI 估算饮食」「AI 估算运动」「让 AI 估算 BMR」「生成报告（含 AI 分析）」或「测试连接」时，应用会把完成该任务所需的<strong>身体数据、您输入的描述文字、以及（若您选择了图片）图片本身</strong>，通过网络发送到<strong>您在「设置 → LLM 档案」中自行填写的接口地址</strong>。</li>
+    <li>如果您在「设置 → 联网搜索」中启用了搜索服务，应用会把<strong>搜索关键词</strong>发送到您配置的搜索服务。</li>
+    <li>应用内置若干常见服务商的接口地址模板（例如 OpenAI 兼容接口、Anthropic、Google Gemini 等形态），<strong>但只有您自行填写凭据并主动触发时才会发生数据传输</strong>；开发者不代为转发、不缓存、不留存这些数据。</li>
+    <li>该第三方服务的运营者、其数据存储位置、保留期限与隐私做法，<strong>由该服务的提供方决定，不由本应用或开发者控制</strong>。若您填写的接口位于境外，上述数据将构成个人信息出境，请您自行确认该服务已完成相应合规手续，并阅读其隐私政策。</li>
+    <li>若您<strong>未配置</strong>任何接口，应用不会发送任何数据，此时 AI 相关功能不可用，但手动记录与热量差计算仍可正常使用。</li>
+    <li>除此之外，我们<strong>不会</strong>向任何第三方出售、出租、共享或公开您的个人信息；除法律法规要求或司法机关、监管部门依法定程序调取外，不对外提供。</li>
+  </ul>
+  <p class="card warn" style="margin:12px 0"><strong>请特别注意：</strong>为保护您的健康数据，建议只填写<strong>以 <code>https://</code> 开头</strong>的接口地址。使用 <code>http://</code> 明文地址时，数据与 API Key 可能在传输途中被他人截获。本应用已默认禁止明文网络请求，仅在您显式填写 <code>http://</code> 地址时才会放行，并会向您提示风险。</p>
+
+  <h2 id="sdk" class="anchor">4. 第三方 SDK 清单</h2>
+  <p>本应用为纯本地工具，<strong>未集成任何广告、统计、推送、崩溃上报、社交分享或应用市场联运 SDK</strong>。应用内仅包含以下在设备本地运行的组件，它们<strong>不收集、不上传任何个人信息，也不进行网络请求</strong>：</p>
+  <table>
+    <tr><th>组件名称</th><th>提供方</th><th>用途</th><th>是否收集或上传个人信息</th></tr>
+    <tr><td>Chaquopy（Python 运行时，CPython 3.14）</td><td>Chaquo Ltd.</td><td>在设备上运行应用自带的 Python 业务代码</td><td>否，纯本地运行</td></tr>
+    <tr><td>AndroidX（AppCompat / Core / Activity）</td><td>Google LLC</td><td>安卓界面兼容与基础组件库</td><td>否，纯本地运行</td></tr>
+    <tr><td>Kotlin 标准库</td><td>JetBrains s.r.o.</td><td>语言运行时库</td><td>否，纯本地运行</td></tr>
+    <tr><td>广告／统计／推送／崩溃上报 SDK</td><td>无</td><td>未集成</td><td>无</td></tr>
+  </table>
+  <p><strong>关于您自行配置的第三方服务（不属于内置 SDK）：</strong>当您在设置中填写并主动使用时，数据会直接由您的设备发送至该服务商。常见情形包括大模型接口（如 OpenAI 兼容接口、Anthropic、Google Gemini 等）与搜索服务（如 SearXNG、Tavily、Brave Search）。这些服务商对数据的处理规则<strong>请以您所选服务商官网公布的最新隐私政策为准</strong>，本政策无法替代。</p>
+
+  <h2 id="permission" class="anchor">5. 设备权限说明</h2>
+  <table>
+    <tr><th>权限</th><th>用途</th><th>是否必需</th></tr>
+    <tr><td><code>INTERNET</code>（访问网络）</td><td>调用您自行配置的大模型接口与搜索服务；不配置接口时不产生任何网络请求</td><td>必需</td></tr>
+    <tr><td><code>ACCESS_NETWORK_STATE</code>（查看网络状态）</td><td>判断网络是否可用，以便在断网时给出明确提示而非长时间等待</td><td>可选</td></tr>
+  </table>
+  <p>应用<strong>不申请</strong>位置、相机、麦克风、通讯录、短信、存储、电话、日历等敏感权限，也不存在后台自启动行为。选择食物照片时调用系统文件选择器，由系统仅向应用授予您选中图片的临时读取权限。</p>
+
+  <h2 id="rights" class="anchor">6. 您的个人信息权利及行使方式</h2>
+  <p>由于您的数据全部保存在您自己的设备上，开发者并不持有这些数据，因此下列权利<strong>多数可在应用内即时完成，无需向我们申请</strong>：</p>
+  <table>
+    <tr><th>权利</th><th>行使方式</th></tr>
+    <tr><td><strong>查阅</strong></td><td>「每日」页查看全部饮食与运动记录；「身体数据」页查看当前身体数据与历史版本；「报告」页查看统计结果。</td></tr>
+    <tr><td><strong>复制 / 数据可携带</strong></td><td>「设置 → 数据管理 → 导出全部数据」，可下载 JSON 文件，包含全部记录与配置（<strong>不含 API Key 明文</strong>），您可自行留存或迁移。</td></tr>
+    <tr><td><strong>更正 / 补充</strong></td><td>「每日」页可逐条修改或删除记录；「身体数据」页可修改并生成新版本，历史版本随时可回溯。</td></tr>
+    <tr><td><strong>删除</strong></td><td>「设置 → 数据管理 → 清除全部数据」可一次性删除身体数据、饮食与运动记录、报告；卸载应用即删除全部本地数据。</td></tr>
+    <tr><td><strong>撤回同意</strong></td><td>「设置 → 数据管理 → 撤回隐私政策同意」，将停止使用并返回同意页。撤回后无需我们处理任何数据，因为开发者从未获取您的数据。</td></tr>
+    <tr><td><strong>注销账号</strong></td><td>本应用<strong>不设账号体系</strong>，不存在注册账号，因此无需也不能注销账号。您执行“清除全部数据”或卸载应用，即等同于删除全部个人信息。</td></tr>
+    <tr><td><strong>投诉举报</strong></td><td>发送邮件至 <a href="mailto:1242670353@qq.com">1242670353@qq.com</a>，或通过下方第 9 节联系方式提出。我们将在 <strong>15 个工作日</strong>内答复。</td></tr>
+  </table>
+  <p>此外：本应用<strong>不进行自动化决策</strong>——AI 估算结果仅作为草稿展示，必须经您确认后才会保存；本应用不进行个性化推送与用户画像。</p>
+  <p>若您通过邮箱提出与个人信息相关的请求，为保障安全，我们可能需要您提供必要信息以核验身份；若您对我们的答复不满意，您还可以向网信、电信、公安、市场监管等主管部门投诉或举报。</p>
+
+  <h2 id="minor" class="anchor">7. 未成年人保护</h2>
+  <p>本应用不面向未满 14 周岁的儿童，也不主动收集其个人信息。若您是未成年人，请在监护人陪同下阅读本政策，并在取得监护人同意后使用本应用。监护人如发现未成年人未经同意使用本应用，可通过第 9 节联系方式与我们联系。</p>
+
+  <h2 id="update" class="anchor">8. 本政策的更新</h2>
+  <p>当本政策发生重大变更（例如新增数据用途、新增对外提供对象）时，我们会在应用启动时再次弹窗提示，由您重新确认同意后方可继续使用。历史版本可通过第 9 节联系方式索取。</p>
+
+  <h2 id="contact" class="anchor">9. 联系我们</h2>
+  <p>如对本政策或您的个人信息有任何疑问、意见或投诉，请联系个人信息保护相关负责人：</p>
+  <ul>
+    <li>开发者与个人信息处理者：熊伟枫</li>
+    <li>电子邮箱：<a href="mailto:1242670353@qq.com">1242670353@qq.com</a></li>
+    <!-- 应用在华为应用市场上架后，可取消下面一行的注释并填入详情页链接：
+    <li>应用市场详情页：<a href="在此填入华为应用市场详情页链接">热量管理 - 华为应用市场</a></li>
+    -->
+  </ul>
+  <p>我们将在收到您的问题后 <strong>15 个工作日</strong>内答复。</p>
+
+</div>
+
+<!-- ==================== English ==================== -->
+<div data-lang-block="en" hidden>
+
+  <nav class="toc" aria-label="Contents">
+    <a href="#en-collect">1. Information collected</a>
+    <a href="#en-store">2. Storage and protection</a>
+    <a href="#en-share">3. Disclosure and cross-border transfer</a>
+    <a href="#en-sdk">4. Third-party SDKs</a>
+    <a href="#en-permission">5. Permissions</a>
+    <a href="#en-rights">6. Your rights</a>
+    <a href="#en-minor">7. Minors</a>
+    <a href="#en-update">8. Policy changes</a>
+    <a href="#en-contact">9. Contact us</a>
+  </nav>
+
+  <div class="card warn">
+    <h2>Please read first</h2>
+    <p>Calorie Tracker is a <strong>fully local</strong> personal calorie and exercise logging tool. The developer <strong>operates no server</strong> and does not collect, upload, or store any of your personal information.</p>
+    <p style="margin-bottom:0">The body data and food/exercise records you enter stay in <strong>your own device's private app storage</strong>. The only network activity is sending data to the <strong>third-party AI (LLM) endpoint or search service that you configure yourself</strong> in Settings. Please read Section 3 carefully.</p>
+  </div>
+
+  <h2 id="en-collect" class="anchor">1. What information is collected</h2>
+  <p>The app has <strong>no account system</strong> and requires no sign-up, phone number or email address. The following is entered by you or produced by an AI estimate you trigger, and is stored on your device only — the developer cannot access it:</p>
+  <table>
+    <tr><th>Category</th><th>Details</th><th>Source</th></tr>
+    <tr><td>Body data</td><td>Sex, age, height, weight, daily-activity description, goal description, BMR, maintenance burn, and a free-text "extra" field</td><td>Entered by you, or drafted by AI when you tap "estimate"</td></tr>
+    <tr><td>Food records</td><td>Date, meal, food name, grams, calories, protein/carbs/fat, your original description text, confidence and basis</td><td>Entered by you, or AI-estimated and confirmed by you</td></tr>
+    <tr><td>Exercise records</td><td>Date, activity name, minutes, calories burned, confidence and basis</td><td>As above</td></tr>
+    <tr><td>Food photos</td><td>Photos you actively pick (up to 4, compressed before sending)</td><td>Chosen by you via the system picker. The app requests <strong>no storage permission</strong> and cannot read other photos</td></tr>
+    <tr><td>Reports</td><td>Weekly/monthly statistics and optional AI analysis text</td><td>Computed by the app</td></tr>
+    <tr><td>Credentials</td><td>Endpoint URL, model name and API key for the LLM/search service you configure</td><td>Entered by you</td></tr>
+    <tr><td>Preferences</td><td>Interface language and colour theme</td><td>Stored in local device storage</td></tr>
+  </table>
+  <p><strong>The app does NOT collect:</strong> device identifiers (IMEI / OAID / Android ID), phone number, contacts, SMS, precise or coarse location, installed-app list, or clipboard content. It performs no behavioural analytics, profiling, personalised recommendation or ad tracking.</p>
+  <p><strong>The app contains no third-party advertising, analytics, push, or crash-reporting SDK.</strong></p>
+
+  <h2 id="en-store" class="anchor">2. How information is stored and protected</h2>
+  <ul>
+    <li><strong>Location:</strong> on Android, in the app's private directory <code>/data/data/com.calorietracker.app/files/data/</code>, where <code>ct.db</code> holds records and <code>config.json</code> holds settings (including the API key in plain text). Other apps cannot read this directory. On desktop it is the <code>data/</code> folder next to the program.</li>
+    <li><strong>Never uploaded to the developer:</strong> the developer has no server and no upload channel.</li>
+    <li><strong>Local service:</strong> on Android the app runs an internal service bound to <code>127.0.0.1:8787</code> only, for communication between the UI and the local database. It is not exposed to the LAN or the internet.</li>
+    <li><strong>Retention:</strong> data stays on your device until you delete it. Uninstalling the app removes all data.</li>
+    <li><strong>Security note:</strong> the API key is stored in plain text in the config file. Do not share the <code>data/</code> folder or export files, and set a device lock screen.</li>
+  </ul>
+
+  <h2 id="en-share" class="anchor">3. Disclosure to third parties (important)</h2>
+  <p>This is the app's only outbound data channel, and it is <strong>configured and triggered by you</strong>:</p>
+  <ul>
+    <li>When you tap "AI-estimate food", "AI-estimate exercise", "estimate BMR", "generate report (with AI analysis)" or "test connection", the app sends the <strong>body data, your description text and (if you selected images) the images themselves</strong> over the network to the <strong>endpoint you entered under Settings → LLM profiles</strong>.</li>
+    <li>If you enable a search provider under Settings → Web search, the app sends the <strong>search query</strong> to the service you configured.</li>
+    <li>The app ships template endpoint addresses for common providers (e.g. OpenAI-compatible, Anthropic, Google Gemini forms), but <strong>no data is transmitted unless you enter credentials and trigger the action yourself</strong>. The developer does not relay, cache or retain this data.</li>
+    <li>That provider's operator, storage location, retention period and privacy practices are <strong>determined by that provider, not by this app or its developer</strong>. If the endpoint you enter is outside your country, this constitutes a cross-border transfer — please verify that provider's compliance and read its privacy policy.</li>
+    <li>If you configure <strong>no</strong> endpoint, the app sends nothing. AI features are unavailable, but manual logging and calorie-balance calculation still work.</li>
+    <li>Otherwise we <strong>never</strong> sell, rent, share or disclose your personal information to any third party; disclosure occurs only where required by law or by a competent authority acting through due legal process.</li>
+  </ul>
+  <p class="card warn" style="margin:12px 0"><strong>Important:</strong> to protect your health data, prefer endpoints beginning with <code>https://</code>. With a plain <code>http://</code> endpoint, your data and API key may be intercepted in transit. The app blocks cleartext traffic by default and only allows it when you explicitly enter an <code>http://</code> address, after warning you of the risk.</p>
+
+  <h2 id="en-sdk" class="anchor">4. Third-party SDK list</h2>
+  <p>The app is a fully local tool and integrates <strong>no advertising, analytics, push, crash-reporting, social-sharing or app-store distribution SDK</strong>. It contains only the following components that run locally on the device and <strong>collect nothing, upload nothing and make no network requests</strong>:</p>
+  <table>
+    <tr><th>Component</th><th>Provider</th><th>Purpose</th><th>Collects/uploads personal data</th></tr>
+    <tr><td>Chaquopy (Python runtime, CPython 3.14)</td><td>Chaquo Ltd.</td><td>Runs the app's bundled Python business logic on device</td><td>No, runs locally</td></tr>
+    <tr><td>AndroidX (AppCompat / Core / Activity)</td><td>Google LLC</td><td>Android UI compatibility and base libraries</td><td>No, runs locally</td></tr>
+    <tr><td>Kotlin standard library</td><td>JetBrains s.r.o.</td><td>Language runtime</td><td>No, runs locally</td></tr>
+    <tr><td>Ad / analytics / push / crash SDKs</td><td>None</td><td>Not integrated</td><td>None</td></tr>
+  </table>
+  <p><strong>Third-party services you configure yourself (not bundled SDKs):</strong> when you enter and actively use them, data is sent directly from your device to that provider. Typical cases include LLM endpoints (e.g. OpenAI-compatible, Anthropic, Google Gemini) and search services (e.g. SearXNG, Tavily, Brave Search). <strong>Please refer to the latest privacy policy published by the provider you choose</strong>; this policy does not replace it.</p>
+
+  <h2 id="en-permission" class="anchor">5. Device permissions</h2>
+  <table>
+    <tr><th>Permission</th><th>Purpose</th><th>Required</th></tr>
+    <tr><td><code>INTERNET</code></td><td>Call the LLM and search endpoints you configure; no request is made unless you configure an endpoint</td><td>Yes</td></tr>
+    <tr><td><code>ACCESS_NETWORK_STATE</code></td><td>Detect connectivity so an offline state produces a clear message instead of a long wait</td><td>Optional</td></tr>
+  </table>
+  <p>The app requests <strong>no</strong> location, camera, microphone, contacts, SMS, storage, phone or calendar permissions, and does not auto-start in the background. Picking a food photo uses the system file picker, which grants temporary read access to the selected image only.</p>
+
+  <h2 id="en-rights" class="anchor">6. Your rights and how to exercise them</h2>
+  <p>Because all data lives on your own device and the developer holds none of it, most rights can be exercised <strong>immediately inside the app, without contacting us</strong>:</p>
+  <table>
+    <tr><th>Right</th><th>How to exercise it</th></tr>
+    <tr><td><strong>Access</strong></td><td>The Daily page lists all food and exercise entries; the Body data page shows current data and version history; the Report page shows statistics.</td></tr>
+    <tr><td><strong>Copy / portability</strong></td><td>Settings → Data management → Export all data downloads a JSON file with all records and settings (<strong>without API key secrets</strong>) that you can keep or migrate.</td></tr>
+    <tr><td><strong>Rectification</strong></td><td>The Daily page lets you edit or delete any entry; the Body data page lets you revise your data and keeps previous versions reviewable.</td></tr>
+    <tr><td><strong>Erasure</strong></td><td>Settings → Data management → Clear all data deletes body data, food/exercise records and reports in one step; uninstalling removes all local data.</td></tr>
+    <tr><td><strong>Withdraw consent</strong></td><td>Settings → Data management → Withdraw privacy consent stops use and returns to the consent screen. Nothing needs deleting on our side, because the developer never received your data.</td></tr>
+    <tr><td><strong>Account deletion</strong></td><td>The app has <strong>no account system</strong> and no registered account, so there is no account to delete. Clearing all data or uninstalling is equivalent to erasing all personal information.</td></tr>
+    <tr><td><strong>Complaints</strong></td><td>Email <a href="mailto:1242670353@qq.com">1242670353@qq.com</a> or use the contact details in Section 9. We reply within <strong>15 working days</strong>.</td></tr>
+  </table>
+  <p>In addition: the app performs <strong>no automated decision-making</strong> — AI estimates are shown as drafts and are saved only after you confirm them. There is no personalised push or profiling.</p>
+  <p>If you contact us by email about personal information, we may ask for the minimum information needed to verify your identity. If you are not satisfied with our response, you may also complain to the competent internet, telecommunications, public security or market-regulation authorities.</p>
+
+  <h2 id="en-minor" class="anchor">7. Minors</h2>
+  <p>The app is not directed at children under 14 and does not knowingly collect their personal information. If you are a minor, please read this policy with a guardian and use the app only with their consent. Guardians may contact us using the details in Section 9.</p>
+
+  <h2 id="en-update" class="anchor">8. Changes to this policy</h2>
+  <p>If this policy changes materially (for example, a new data use or a new recipient), the app will show the consent dialog again at launch and require your renewed consent before you continue. Previous versions are available on request via Section 9.</p>
+
+  <h2 id="en-contact" class="anchor">9. Contact us</h2>
+  <ul>
+    <li>Developer and personal information handler: Xiong Weifeng (熊伟枫)</li>
+    <li>Email: <a href="mailto:1242670353@qq.com">1242670353@qq.com</a></li>
+  </ul>
+  <p>We will respond within <strong>15 working days</strong>.</p>
+
+</div>
+
+<footer>本政策自生效日期起施行。若您不同意本政策，请停止使用本应用。<br>This policy takes effect on the effective date above. If you do not agree with it, please stop using the app.</footer>
+</div>
+
+<script>
+(function () {
+  "use strict";
+  var KEY = "ct-privacy-lang";
+  function stored() {
+    try { return localStorage.getItem(KEY); } catch (e) { return null; }
+  }
+  function apply(lang) {
+    if (lang !== "en") lang = "zh-CN";
+    document.documentElement.lang = lang;
+    document.querySelectorAll("[data-lang-block]").forEach(function (el) {
+      el.hidden = el.dataset.langBlock !== lang;
+    });
+    document.querySelectorAll(".lang button").forEach(function (b) {
+      b.setAttribute("aria-pressed", String(b.dataset.lang === lang));
+    });
+  }
+  document.querySelectorAll(".lang button").forEach(function (b) {
+    b.addEventListener("click", function () {
+      var lang = b.dataset.lang;
+      apply(lang);
+      try { localStorage.setItem(KEY, lang); } catch (e) {}
+    });
+  });
+  // 默认展示简体中文（应用市场评审以中文版为准），用户手动切换后记住选择。
+  apply(stored() || "zh-CN");
+})();
+</script>
+</body>
+</html>
