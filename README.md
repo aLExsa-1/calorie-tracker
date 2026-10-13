@@ -140,25 +140,18 @@ android/       安卓壳（Chaquopy + WebView）与 APK
 
 ### v0.4.0（2026-10-13）
 
-自定义条目库（不用 AI 也能记录）：
+自定义条目库：
 
 - 新增自定义食物：名称、每份热量、每份克数、蛋白质／碳水／脂肪、份量说明、备注
 - 新增自定义运动：名称、每次消耗热量、对应时长、备注
 - 选中条目后按份数（食物）或分钟数（运动）「加入草稿」，与 AI 估算共用同一套「核对后保存」的流程；运动按时长比例换算热量
 - 条目只保存在本机 SQLite；「导出全部数据」与「清除全部数据」已覆盖
 
-LLM 配置（接入更省事）：
+LLM 配置：
 
 - 新增「预设提供商」：一键填入 13 家服务商的协议与接口地址——DeepSeek、智谱 GLM、Kimi（月之暗面）、阿里云百炼（通义千问）、OpenAI、Anthropic、Google Gemini、OpenRouter、硅基流动、xAI、火山方舟（豆包）、Mistral、MiniMax
 - 新增「获取可用模型」：按 OpenAI 协议 `GET /models` 或 Anthropic 协议 `GET /v1/models` 查询上游模型列表并下拉选择；未保存的档案也能用表单里临时填写的协议、地址与 Key 查询
 - 预设的模型名仅作初始参考，模型更新较快，请以「获取可用模型」的结果为准
-
-打包与测试：
-
-- 版本号更新为 0.4.0（versionCode 7），APK 重新构建并通过 v2/v3 签名校验
-- 端到端测试增至 68 项：新增自定义条目库的增删改与范围校验、库条目记入日汇总、预设提供商列表、模型列表查询的 URL 与认证头、错误映射（400/502）、导出与清除覆盖条目库、前端契约与双语文案
-- 0.4.0 重打一次：《隐私政策》《用户协议》的占位符已填入开发者主体（熊伟枫）、联系邮箱（1242670353@qq.com）与管辖法院（四川省宜宾市中级人民法院），中英文两边同步；协议页版本行改为「版本：0.4.0　生效日期：2026年10月13日」；应用市场详情页链接仍保留占位，待上架时补填
-- 电脑版发布包改用脚本打包（`python .android-build/make_windows_zip.py`）：包内补入 `privacy.html` 与 `terms.html`（0.3.0/0.3.1 的包漏打了协议页，电脑版点「查看隐私政策」会 404），并强制校验 `data/`、密钥等私有内容不入包
 
 ### v0.3.1（2026-10-12）
 
@@ -361,13 +354,6 @@ LLM setup (easier onboarding):
 - New "Provider preset": one tap fills the protocol and base URL for 13 providers — DeepSeek, Zhipu GLM, Kimi (Moonshot), Alibaba Cloud Bailian (Qwen), OpenAI, Anthropic, Google Gemini, OpenRouter, SiliconFlow, xAI, Volcano Ark (Doubao), Mistral and MiniMax
 - New "Fetch available models": queries the upstream model list via OpenAI-style `GET /models` or Anthropic-style `GET /v1/models` and lets you pick from a dropdown; a profile that is not saved yet can query with the protocol, URL and key typed in the form
 - Preset model names are only a starting point; models change quickly, so trust the "Fetch available models" result
-
-Packaging and tests:
-
-- Version updated to 0.4.0 (versionCode 7); the APK was rebuilt and verified against the v2/v3 signature schemes
-- End-to-end tests grew to 68: custom-library CRUD and range validation, library items counted in the daily summary, the provider preset list, model-list URL and auth headers, error mapping (400/502), export and clear covering the library, and the front-end contract and bilingual copy
-- 0.4.0 rebuilt once more: the placeholders in the Privacy Policy and User Agreement were filled with the developer identity (熊伟枫 / Xiong Weifeng), the contact email (1242670353@qq.com) and the court of jurisdiction (四川省宜宾市中级人民法院 / Yibin Intermediate People's Court of Sichuan), in both languages; the page header now reads "版本：0.4.0　生效日期：2026年10月13日". The app-store listing link is still a placeholder, to be filled at submission time
-- The desktop package is now produced by a script (`python .android-build/make_windows_zip.py`): it adds `privacy.html` and `terms.html`, which were missing from the 0.3.0/0.3.1 zips (the desktop "view privacy policy" links 404'd), and it refuses to pack `data/` or any signing material
 
 ### v0.3.1 (2026-10-12)
 
