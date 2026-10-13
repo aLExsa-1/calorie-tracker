@@ -166,8 +166,14 @@ def find_web_dir(extra_dirs: list[str] | None = None) -> Path:
         + "\n  ".join(tried) + "\n目录内容：\n" + "\n".join(listing))
 
 
-def start(data_dir: str, port: int = 8787, extra_dirs: list[str] | None = None) -> str:
-    """启动本地后端（幂等）。返回一行状态文本。"""
+def start(data_dir: str, port: int = 8787, extra_dirs: list[str] | None = None,
+          token: str | None = None) -> str:
+    """启动本地后端（幂等）。返回一行状态文本。
+
+    token：本机访问口令。安卓端由 MainActivity 随机生成后传入，其他应用即使能连到
+    127.0.0.1:8787 也会因缺少口令被拒（见 backend/server.py 的 _token_ok）。
+    传空字符串或 None 时不校验口令（电脑版直接开浏览器访问的场景）。
+    """
     if STATE["httpd"] is not None:
         return f"已在运行：{STATE['url']}"
 
@@ -189,7 +195,7 @@ def start(data_dir: str, port: int = 8787, extra_dirs: list[str] | None = None) 
     srv.WEB_DIR = web_dir  # 覆盖静态文件目录（原值为项目根下的 frontend/）
 
     engine = Engine(Store(data / "ct.db"), Config(data / "config.json"))
-    httpd = srv.make_server(engine, "127.0.0.1", int(port))
+    httpd = srv.make_server(engine, "127.0.0.1", int(port), token=token or None)
 
     thread = threading.Thread(target=httpd.serve_forever, name="ct-http", daemon=True)
     thread.start()

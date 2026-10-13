@@ -327,6 +327,22 @@ details.advanced { margin-top: var(--sp-3); }
 .cl-version h3 { font-size: var(--fs-md); margin: var(--sp-2) 0 0; color: var(--ink); }
 @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
 
+/* ---------- 首次启动同意（合规） ---------- */
+.consent-card { width: min(560px, 100%); }
+.consent-card h2 { margin-top: 0; }
+.consent-check { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 10px; align-items: start; padding: var(--sp-3); margin: var(--sp-3) 0; border: 1px solid var(--line); border-radius: var(--r-md); background: var(--field); font-size: var(--fs-sm); line-height: 1.7; cursor: pointer; }
+.consent-check input { width: 20px; height: 20px; margin: 2px 0 0; flex: none; }
+.consent-card .row.end button { min-width: 120px; }
+button.danger { background: var(--bad-soft); color: var(--bad); border-color: #eec9be; }
+button.danger:hover:not(:disabled) { background: #f7d9d0; }
+.btn-link { display: inline-block; padding: 10px 16px; border: 1px solid var(--line); border-radius: var(--r-pill); color: var(--primary); font-size: var(--fs-sm); font-weight: 600; text-decoration: none; background: var(--card); }
+.btn-link:hover { border-color: var(--primary); }
+
+/* ---------- AI 生成内容标识与免责 ---------- */
+.ai-block { border-left: 3px solid var(--secondary); padding-left: var(--sp-3); margin: var(--sp-2) 0; }
+.ai-badge { display: inline-block; margin: 0 0 var(--sp-3); padding: 3px 10px; border-radius: var(--r-pill); background: var(--secondary-soft); color: var(--secondary); font-size: var(--fs-xs); font-weight: 600; }
+.ai-block .ai-badge { margin-top: var(--sp-2); }
+
 /* ---------- 窄屏：底部标签栏 + 单列 ---------- */
 @media (max-width: 780px) {
   /* 注意：祖先上的 backdrop-filter / transform 会让 position:fixed 的后代改为相对该祖先定位，

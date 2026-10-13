@@ -262,7 +262,52 @@
       "theme.hint": "选择喜欢的配色，只保存在本设备上，立即生效。",
       "theme.forest": "森林奶油",
       "theme.ocean": "海盐蓝",
-      "theme.plum": "桑葚紫"
+      "theme.plum": "桑葚紫",
+
+      /* ---- 首次启动同意（合规必需） ---- */
+      "consent.title": "隐私政策与用户协议",
+      "consent.lead": "欢迎使用热量管理。本应用为<strong>纯本地运行</strong>的个人工具，开发者不运营服务器，不收集、不上传您的个人信息。请在开始使用前阅读并同意以下条款。",
+      "consent.p1": "我已阅读并同意<strong>《隐私政策》</strong>。我知悉：我的身体数据、饮食与运动记录、以及我主动选择的食物照片，仅保存在本机；当我使用 AI 估算功能时，相关数据会被发送到<strong>我自己配置的第三方大模型接口</strong>，该接口由其提供方运营，不由本应用控制。",
+      "consent.p2": "我已阅读并同意<strong>《用户协议》</strong>。我知悉：本应用不是医疗器械，其热量与代谢数值由程序计算或 AI 估算，<strong>可能存在误差，不构成医疗建议</strong>。",
+      "consent.agree": "同意并继续",
+      "consent.decline": "不同意",
+      "consent.declined": "您已选择不同意。若不同意隐私政策与用户协议，本应用无法继续使用。您可以查看下方文档后重新选择。",
+      "consent.review": "再次查看",
+      "consent.retry": "返回并重新选择",
+      "consent.hint": "您的同意状态只记录在本设备上。在您同意之前，应用不会向任何服务器发送您的数据；可在「设置 → 数据管理」中随时撤回同意。",
+      "consent.exit": "退出应用",
+
+      /* ---- 法律文档入口 ---- */
+      "legal.h": "隐私与协议",
+      "legal.hint": "您可以在应用内查看完整文档，也可以复制链接后在浏览器中打开。",
+      "legal.privacy": "隐私政策",
+      "legal.terms": "用户协议",
+      "legal.privacyOpen": "在浏览器中打开隐私政策",
+      "legal.termsOpen": "在浏览器中打开用户协议",
+      "pv.back": "返回应用",
+      "tm.back": "返回应用",
+
+      /* ---- 数据管理 ---- */
+      "data.h": "数据管理",
+      "data.hint": "您的全部数据都保存在本机。这里可以导出备份，或一次性删除全部数据。",
+      "data.export": "导出全部数据",
+      "data.exportHint": "下载 JSON 文件，包含身体数据、饮食与运动记录、报告与配置（不含 API Key 明文）。",
+      "data.clear": "清除全部数据",
+      "data.clearHint": "删除本机全部身体数据、记录与报告，此操作不可撤销。",
+      "data.withdraw": "撤回隐私政策同意",
+      "data.withdrawHint": "撤回后将返回同意页并停止使用应用，本机数据不会被自动删除。",
+      "data.exported": "已导出 {n} 条记录",
+      "data.exportFail": "导出失败：{msg}",
+      "confirm.clear": "确定要删除全部数据吗？包括身体数据、饮食与运动记录、报告。此操作不可撤销。",
+      "confirm.clearAgain": "最后确认：全部数据将被永久删除且无法恢复，是否继续？",
+      "data.cleared": "已删除全部数据（身体数据 {profiles} 条、记录 {entries} 条、报告 {reports} 条）",
+      "data.clearFail": "清除失败：{msg}",
+      "confirm.withdraw": "撤回同意后将返回同意页并停止使用应用，是否继续？",
+
+      /* ---- AI 内容与免责标识 ---- */
+      "ai.badge": "AI 生成，仅供参考",
+      "ai.disclaimer": "以上内容由 AI 生成，不构成医疗建议。如有健康问题请咨询执业医师。",
+      "legal.footerDisclaimer": "热量与代谢数值由程序计算或 AI 估算，可能存在误差，不构成医疗建议。"
     },
     "en": {
       "page.title": "Calorie Tracker · 热量管理",
@@ -517,7 +562,52 @@
       "theme.hint": "Pick a color scheme. It is stored on this device only and applies instantly.",
       "theme.forest": "Forest cream",
       "theme.ocean": "Sea salt blue",
-      "theme.plum": "Mulberry plum"
+      "theme.plum": "Mulberry plum",
+
+      /* ---- First-launch consent (compliance) ---- */
+      "consent.title": "Privacy Policy and User Agreement",
+      "consent.lead": "Welcome to Calorie Tracker. This is a <strong>fully local</strong> personal tool: the developer runs no server and does not collect or upload your personal information. Please read and accept the following before you start.",
+      "consent.p1": "I have read and accept the <strong>Privacy Policy</strong>. I understand that my body data, food and exercise records, and any food photos I choose are stored on this device only; when I use an AI estimate, the relevant data is sent to <strong>the third-party LLM endpoint I configure myself</strong>, which is operated by its provider and not controlled by this app.",
+      "consent.p2": "I have read and accept the <strong>User Agreement</strong>. I understand that this app is not a medical device and that its calorie and metabolic values are computed or AI-estimated, <strong>may be inaccurate, and do not constitute medical advice</strong>.",
+      "consent.agree": "Agree and continue",
+      "consent.decline": "Decline",
+      "consent.declined": "You have declined. Without accepting the Privacy Policy and User Agreement the app cannot be used. You may review the documents below and choose again.",
+      "consent.review": "Review again",
+      "consent.retry": "Go back and choose again",
+      "consent.hint": "Your choice is recorded on this device only. Before you agree, the app sends none of your data to any server. You can withdraw consent any time under Settings → Data management.",
+      "consent.exit": "Exit app",
+
+      /* ---- Legal document links ---- */
+      "legal.h": "Privacy & terms",
+      "legal.hint": "Read the full documents in the app, or copy a link and open it in a browser.",
+      "legal.privacy": "Privacy Policy",
+      "legal.terms": "User Agreement",
+      "legal.privacyOpen": "Open Privacy Policy in browser",
+      "legal.termsOpen": "Open User Agreement in browser",
+      "pv.back": "Back to the app",
+      "tm.back": "Back to the app",
+
+      /* ---- Data management ---- */
+      "data.h": "Data management",
+      "data.hint": "All your data is stored on this device. Export a backup here, or delete everything at once.",
+      "data.export": "Export all data",
+      "data.exportHint": "Download a JSON file with body data, food and exercise records, reports and settings (no API key secrets).",
+      "data.clear": "Clear all data",
+      "data.clearHint": "Delete all body data, records and reports on this device. This cannot be undone.",
+      "data.withdraw": "Withdraw privacy consent",
+      "data.withdrawHint": "Returns to the consent screen and stops use of the app. Local data is not deleted automatically.",
+      "data.exported": "Exported {n} records",
+      "data.exportFail": "Export failed: {msg}",
+      "confirm.clear": "Delete all data? This includes body data, food and exercise records, and reports. This cannot be undone.",
+      "confirm.clearAgain": "Final confirmation: all data will be permanently deleted and cannot be recovered. Continue?",
+      "data.cleared": "All data deleted (body data {profiles}, records {entries}, reports {reports})",
+      "data.clearFail": "Clear failed: {msg}",
+      "confirm.withdraw": "Withdrawing consent returns to the consent screen and stops use of the app. Continue?",
+
+      /* ---- AI content labelling & disclaimers ---- */
+      "ai.badge": "AI-generated, for reference only",
+      "ai.disclaimer": "The content above is AI-generated and is not medical advice. Consult a physician for any health concern.",
+      "legal.footerDisclaimer": "Calorie and metabolic values are computed or AI-estimated, may be inaccurate, and are not medical advice."
     }
   };
 

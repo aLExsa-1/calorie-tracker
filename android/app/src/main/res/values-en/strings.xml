@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 英文环境同样使用「热量管理」作为应用名：
+     应用市场要求安装包内的应用名与商店展示名逐字一致，
+     而本应用在商店的名称就是「热量管理」。 -->
+<resources>
+    <string name="app_name">热量管理</string>
+    <string name="starting">Starting the built-in service…</string>
+    <string name="starting_hint">The first launch initialises the Python runtime, please wait</string>
+</resources>

@@ -8,7 +8,7 @@
 
 ### 下载与解压
 
-电脑版发布包为 `calorie-tracker-0.3.0-windows.zip`（约 65 KB，只含程序代码，不含个人数据）。解压到任意目录即可，例如 `C:\Apps\calorie-tracker`。
+电脑版发布包为 `calorie-tracker-0.3.1-windows.zip`（约 65 KB，只含程序代码，不含个人数据）。解压到任意目录即可，例如 `C:\Apps\calorie-tracker`。
 
 ### 环境要求
 
@@ -37,13 +37,13 @@ python -m backend serve --port 8787
 
 ## 安卓版 APK
 
-本仓库同时提供打包好的安卓应用（0.3.0）：APK 内嵌 Python 运行时与后端，**不需要电脑即可使用**，数据保存在手机应用私有目录。
+本仓库同时提供打包好的安卓应用（0.3.1）：APK 内嵌 Python 运行时与后端，**不需要电脑即可使用**，数据保存在手机应用私有目录。
 
 ```
-android/CalorieTracker-0.3.0-arm64.apk   约 22.1 MB，仅 arm64-v8a，Android 7.0+
+android/CalorieTracker-0.3.1-arm64.apk   约 22.1 MB，仅 arm64-v8a，Android 7.0+
 ```
 
-安装后首次使用需在「设置」页填一次 LLM 档案（地址 / 模型 / API Key）。0.3.0 的真机复测尚未完成，详见 [android/README-Android.md](android/README-Android.md)。构建方法、与电脑版的差异、已验证与未验证事项也在该文件中。
+安装后首次启动会先显示《隐私政策》与《用户协议》的同意页，然后需在「设置」页填一次 LLM 档案（地址 / 模型 / API Key）。0.3.1 的真机复测尚未完成，详见 [android/README-Android.md](android/README-Android.md)。构建方法、与电脑版的差异、已验证与未验证事项也在该文件中。
 
 ## 目录
 
@@ -60,6 +60,7 @@ backend/
   store.py     SQLite：身体数据历史版本、记录、报告
 frontend/
   index.html / style.css / app.js   独立前端（记录、每日、报告、身体数据、设置）
+  privacy.html / terms.html         隐私政策与用户协议（中英双语，可单独托管给商店审核）
   i18n.js / changelog.json         中英文文案与更新日志
 tests/
   test_e2e.py  端到端测试（真实后端 HTTP + 本地模拟 LLM 与搜索服务）
@@ -116,13 +117,13 @@ android/       安卓壳（Chaquopy + WebView）与 APK
 
 已通过的自动化测试（均在本机运行，退出码为 0）：
 
-- `python -m unittest tests.test_e2e`：40 项端到端测试。覆盖 LLM 档案增删改与 Key 脱敏、非法配置拦截、提示词覆盖与恢复、饮食估算（含搜索结果拼接与自定义提示词）、运动估算（Anthropic 协议）、extra_body 合并、搜索失败降级、AI 输出不合规返回 422、上游 500 返回 502、未配置 LLM 时的提示、保存与修改记录、热量差计算、身体数据版本、代谢估算、周/月报告（有无 AI 分析）、静态页面与路径穿越防护，以及前端结构契约。
+- `python -m unittest tests.test_e2e`：55 项端到端测试。覆盖 LLM 档案增删改与 Key 脱敏、非法配置拦截、提示词覆盖与恢复、饮食估算（含搜索结果拼接与自定义提示词）、运动估算（Anthropic 协议）、extra_body 合并、搜索失败降级、AI 输出不合规返回 422、上游 500 返回 502、未配置 LLM 时的提示、保存与修改记录、热量差计算、身体数据版本、代谢估算、周/月报告（有无 AI 分析）、报告删除、静态页面与路径穿越防护、数据导出（不含 API Key 明文）、清除全部数据、本机访问口令校验、DNS rebinding 防护、CORS 收敛，以及前端结构契约与合规契约（同意层先于联网、协议页中英双语、免责声明）。
 - 前端 frontend/app.js 通过 node --check 语法检查。
 - 真实启动 `python -m backend serve`，健康检查返回正常，首页返回 200，四个 AI 任务已注册。
 
 **尚未验证的部分**
 
-- 没有在浏览器中逐个点击过 0.3.0 的页面。按钮交互、表格渲染、配色切换的实际效果需要你在浏览器里走一遍。
+- 没有在浏览器中逐个点击过 0.3.1 的页面。按钮交互、表格渲染、配色切换、以及首次启动的同意页需要你在浏览器里走一遍。
 - 没有接入真实大模型。测试全部使用本地模拟服务，AI 估算的准确度、提示词效果、各家协议的细节差异都需要用真实 Key 验证。图片识别同样只在模拟服务上测试。
 - 联网搜索只在模拟 SearXNG 上测试，Tavily 与 Brave 的适配代码未经真实请求验证。
 
@@ -134,7 +135,31 @@ android/       安卓壳（Chaquopy + WebView）与 APK
 
 ## 更新日志
 
-### v0.3.0（2026-10-13）
+### v0.3.1（2026-10-12）
+
+合规与隐私（本次重点，为应用市场上架准备）：
+
+- 新增首次启动同意页：必须阅读并勾选同意《隐私政策》与《用户协议》后才能使用；**同意之前不向任何服务器发送用户数据**（安卓壳仅探测本机内置服务是否就绪，不发送用户数据）
+- 新增《隐私政策》与《用户协议》完整文档（中英文双语，`frontend/privacy.html` / `terms.html`），设置页「隐私与协议」可随时查看
+- 隐私政策如实写明：开发者不运营服务器、不收集个人信息；使用 AI 估算时数据会发送到你自己配置的第三方接口，并提示优先使用 https 地址、说明数据出境风险
+- 新增「数据管理」：导出全部数据为 JSON（不含 API Key 明文）、清除全部数据、撤回隐私政策同意
+- AI 估算草稿与报告分析加「AI 生成，仅供参考」标识；报告页与设置页加免责声明（不构成医疗建议）
+- 修复：报告无法删除（新增删除报告接口）
+
+安全加固：
+
+- 本地内置服务增加随机访问口令（安卓端由 `MainActivity` 生成并注入 WebView），设备上其他应用无法再直接调用本机接口
+- 接口拒绝非回环 `Host`（DNS rebinding 防护）；CORS 由通配符改为仅回显回环来源；响应加 `Referrer-Policy: no-referrer` 与 `X-Content-Type-Options: nosniff`
+- 安卓：关闭应用数据备份（`allowBackup=false` + 备份/迁移规则），健康记录与明文 API Key 不再可能被 adb 或云备份导出
+- 安卓：默认禁止明文 HTTP，仅对 `127.0.0.1` 本机服务放行，用户填写的 `http://` 接口会被系统阻断
+- 安卓：WebView 混合内容改为 `NEVER_ALLOW`
+
+打包：
+
+- 启用 v3 签名方案；补充英文 `strings.xml` 与自适应图标的 monochrome 层
+- 版本号更新为 0.3.1（versionCode 6）
+
+### v0.3.0（2026-10-11）
 
 - 全新界面「森林奶油」：奶油底色、森林绿主色、石板蓝点缀，卡片更圆润
 - 设置页新增「界面配色」，可切换森林奶油 / 海盐蓝 / 桑葚紫，立即生效并记住
@@ -147,7 +172,7 @@ android/       安卓壳（Chaquopy + WebView）与 APK
 - 所有功能与数据保持不变，可直接覆盖安装升级
 - 版本号更新为 0.3.0
 
-### v0.2.1（2026-10-13）
+### v0.2.1（2026-10-10）
 
 - 饮食记录支持上传食物图片，由 AI 识别后估算热量
 - 图片最多 4 张，每张不超过 5 MB，自动压缩后上传
@@ -156,7 +181,7 @@ android/       安卓壳（Chaquopy + WebView）与 APK
 - 更新日志弹窗支持中英文显示
 - 版本号更新为 0.2.1
 
-### v0.2.0（2026-10-12）
+### v0.2.0（2026-10-09）
 
 - 全新应用图标：深色底配绿橙双环，象征摄入与消耗的平衡
 - 手机窄屏下表格改为卡片，不再横向滚动
@@ -233,6 +258,7 @@ backend/
   store.py     SQLite: body-data version history, records, reports
 frontend/
   index.html / style.css / app.js   Standalone frontend (log, daily, report, body data, settings)
+  privacy.html / terms.html         Privacy Policy and User Agreement (bilingual, hostable for store review)
   i18n.js / changelog.json         Chinese/English strings and changelog
 tests/
   test_e2e.py  End-to-end tests (real backend over HTTP + local mock LLM and search services)
@@ -278,13 +304,13 @@ Calorie balance = intake − (maintenance burn + exercise burn). Maintenance bur
 
 Automated tests that passed locally (exit code 0):
 
-- `python -m unittest tests.test_e2e`: 40 end-to-end tests covering LLM profile CRUD and key masking, invalid config rejection, prompt override and restore, food estimation (with search results and custom prompts), activity estimation (Anthropic protocol), extra_body merge, search failure fallback, non-compliant AI output returning 422, upstream 500 returning 502, the hint when no LLM is configured, record save and edit, calorie balance, body-data versions, metabolism estimation, weekly/monthly reports (with and without AI analysis), static pages and path-traversal protection, and frontend structure contracts.
+- `python -m unittest tests.test_e2e`: 55 end-to-end tests covering LLM profile CRUD and key masking, invalid config rejection, prompt override and restore, food estimation (with search results and custom prompts), activity estimation (Anthropic protocol), extra_body merge, search failure fallback, non-compliant AI output returning 422, upstream 500 returning 502, the hint when no LLM is configured, record save and edit, calorie balance, body-data versions, metabolism estimation, weekly/monthly reports (with and without AI analysis), report deletion, static pages and path-traversal protection, data export (without API key secrets), clearing all data, the local access token, DNS-rebinding protection, CORS scoping, and the frontend structure and compliance contracts (consent before any network call, bilingual policy pages, disclaimers).
 - frontend/app.js passes `node --check`.
 - `python -m backend serve` was started for real: the health check is OK, the home page returns 200, and the four AI tasks are registered.
 
 **Not yet verified**
 
-- The 0.3.0 pages have not been clicked through one by one in a real browser. Button behavior, table rendering and theme switching need a manual check.
+- The 0.3.1 pages have not been clicked through one by one in a real browser. Button behavior, table rendering, theme switching and the new first-launch consent screen need a manual check.
 - No real LLM has been connected. All tests use local mock services, so estimation accuracy, prompt quality and differences between provider protocols must be checked with a real key. Image recognition has only been tested against the mock service.
 - Web search was tested only against a mock SearXNG. The Tavily and Brave adapters have not been verified with real requests.
 
@@ -296,7 +322,31 @@ Automated tests that passed locally (exit code 0):
 
 ## Changelog
 
-### v0.3.0 (2026-10-13)
+### v0.3.1 (2026-10-12)
+
+Compliance and privacy (the focus of this release, in preparation for store submission):
+
+- New first-launch consent screen: the Privacy Policy and User Agreement must be read and accepted before use, and **no user data is sent to any server before you agree** (the Android shell only probes whether the built-in local service is ready)
+- New full Privacy Policy and User Agreement documents (bilingual, `frontend/privacy.html` / `terms.html`), reachable from Settings → Privacy & terms
+- The Privacy Policy states plainly that the developer runs no server and collects nothing; AI estimates send data to the third-party endpoint you configure, with guidance to prefer https and a note on cross-border transfer risk
+- New Data management: export all data as JSON (without API key secrets), clear all data, withdraw privacy consent
+- AI estimate drafts and report analyses carry an "AI-generated, for reference only" label; reports and Settings show a disclaimer that this is not medical advice
+- Fixed: reports could not be deleted (delete-report endpoint added)
+
+Security hardening:
+
+- The built-in local service now requires a random access token (generated by `MainActivity` on Android and injected into the WebView), so other apps on the device can no longer call the local API
+- The API rejects non-loopback `Host` headers (DNS-rebinding protection); CORS no longer uses a wildcard and only echoes loopback origins; responses add `Referrer-Policy: no-referrer` and `X-Content-Type-Options: nosniff`
+- Android: app data backup disabled (`allowBackup=false` plus backup/transfer rules), so health records and the plain-text API key can no longer be pulled out via adb or cloud backup
+- Android: cleartext HTTP blocked by default, allowed only for the `127.0.0.1` local service; an `http://` endpoint you enter is blocked by the system
+- Android: WebView mixed content set to `NEVER_ALLOW`
+
+Packaging:
+
+- v3 signature scheme enabled; English `strings.xml` and a monochrome adaptive-icon layer added
+- Version updated to 0.3.1 (versionCode 6)
+
+### v0.3.0 (2026-10-11)
 
 - New "Forest cream" look: cream background, forest-green primary color, slate-blue accents, rounder cards
 - Settings adds a "Color theme" option (Forest cream / Sea salt blue / Mulberry plum), applied instantly and remembered
@@ -309,7 +359,7 @@ Automated tests that passed locally (exit code 0):
 - All features and data unchanged; install over the previous version to upgrade
 - Version updated to 0.3.0
 
-### v0.2.1 (2026-10-13)
+### v0.2.1 (2026-10-10)
 
 - Food logging supports uploading food photos, which AI recognizes to estimate calories
 - Up to 4 images, each ≤ 5 MB, compressed automatically before upload
@@ -318,7 +368,7 @@ Automated tests that passed locally (exit code 0):
 - Changelog popup shows Chinese and English
 - Version updated to 0.2.1
 
-### v0.2.0 (2026-10-12)
+### v0.2.0 (2026-10-09)
 
 - New app icon: dark background with green and orange rings, representing the balance of intake and burn
 - Tables become cards on narrow screens, no horizontal scrolling

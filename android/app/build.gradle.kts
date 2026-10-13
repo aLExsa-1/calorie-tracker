@@ -23,8 +23,8 @@ android {
         applicationId = "com.calorietracker.app"
         minSdk = 24
         targetSdk = 35
-        versionCode = 5
-        versionName = "0.3.0"
+        versionCode = 6
+        versionName = "0.3.1"
 
         ndk {
             // 只打包 arm64-v8a，减小体积。
@@ -39,6 +39,12 @@ android {
                 storePassword = keystoreProps.getProperty("storePassword")
                 keyAlias = keystoreProps.getProperty("keyAlias")
                 keyPassword = keystoreProps.getProperty("keyPassword")
+                // 开启 v2/v3 签名（应用市场对签名方案完整度有要求，v3 才支持密钥轮换）。
+                // 本项目 minSdk = 24（Android 7.0）高于 v1 签名的适用范围，且 v1 早已废弃，
+                // 因此不启用 v1。
+                enableV1Signing = false
+                enableV2Signing = true
+                enableV3Signing = true
             }
         }
     }

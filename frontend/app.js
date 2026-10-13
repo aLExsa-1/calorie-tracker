@@ -115,8 +115,16 @@ function apiBase() {
   return v.replace(/\/+$/, "");
 }
 
+/* 本机访问口令：安卓壳启动 WebView 时用 URL 片段注入（片段不会发给服务器）。
+ * 电脑版没有口令，返回空字符串，请求头不带该字段。 */
+function apiToken() {
+  return localStorage.getItem("ct.token") || "";
+}
+
 async function api(method, path, body) {
   const opts = { method, headers: {} };
+  const token = apiToken();
+  if (token) opts.headers["X-CT-Token"] = token;
   if (body !== undefined) {
     opts.headers["Content-Type"] = "application/json";
     opts.body = JSON.stringify(body);
@@ -496,7 +504,9 @@ function buildReportHtml(r) {
   let analysis = `<p class="hint">${t("rep.notAnalyzed")}</p>`;
   if (a) {
     const pct = (v) => Math.max(0, Math.min(100, Number(v) || 0));
-    analysis = `<div class="scores">
+    analysis = `<div class="ai-block">
+        <p class="ai-badge" data-ai-badge>${t("ai.badge")}</p>
+        <div class="scores">
         <div class="score-tile"><div class="score">${fmt(a.diet_score)}<small>${t("rep.scoreDiet")}</small></div><div class="meter"><i style="width:${pct(a.diet_score)}%"></i></div></div>
         <div class="score-tile"><div class="score">${fmt(a.exercise_score)}<small>${t("rep.scoreExercise")}</small></div><div class="meter"><i style="width:${pct(a.exercise_score)}%"></i></div></div>
         <div class="score-tile"><div class="score">${esc(a.exercise_level || "—")}<small>${t("rep.scoreLevel")}</small></div></div>
@@ -506,11 +516,14 @@ function buildReportHtml(r) {
       ${listBullets(t("rep.exComments"), a.exercise_comments)}
       ${listBullets(t("rep.suggestions"), a.suggestions)}
       ${listBullets(t("rep.risks"), a.risks)}
-      <p class="hint">${t("rep.analysisModel", { llm: esc(a.llm || "") })}${a.model ? t("rep.modelSuffix", { model: esc(a.model) }) : ""}</p>`;
+      <p class="hint" data-ai-disclaimer>${t("ai.disclaimer")}</p>
+      <p class="hint">${t("rep.analysisModel", { llm: esc(a.llm || "") })}${a.model ? t("rep.modelSuffix", { model: esc(a.model) }) : ""}</p>
+      </div>`;
   }
   const warn = (r.warnings || []).map((w) => `<p class="status err">${esc(w)}</p>`).join("");
   return `<div class="card">${header}${warn}${kpis}${analysis}<h3>${t("rep.dailyDetail")}</h3>${daily}
-    <details><summary class="hint">${t("rep.rawJson")}</summary><pre>${esc(JSON.stringify(s, null, 2))}</pre></details></div>`;
+    <details><summary class="hint">${t("rep.rawJson")}</summary><pre>${esc(JSON.stringify(s, null, 2))}</pre></details>
+    <p class="hint" data-legal-disclaimer>${t("legal.footerDisclaimer")}</p></div>`;
 }
 
 function renderReportView() {
@@ -844,6 +857,113 @@ async function resetPrompt(task) {
   }
 }
 
+/* ================= 同意与数据处理 =================
+ * 合规要点：
+ *   1. 首次启动必须先取得同意，同意之前不发起任何网络请求（包括健康检查）；
+ *   2. 政策版本升级时重新征求同意；
+ *   3. 提供数据导出（可携带）与一键删除入口。
+ * 同意状态仅保存在本机 localStorage，不上传任何地方。 */
+const CONSENT_KEY = "ct.consent";
+const POLICY_VERSION = "0.1";   // 隐私政策 / 用户协议的内容版本，改动条款时递增
+
+function consentState() {
+  try { return localStorage.getItem(CONSENT_KEY) || ""; } catch (_) { return ""; }
+}
+
+/* 版本号一致即视为已同意；政策条款更新时递增 POLICY_VERSION 会让旧同意自动失效 */
+function hasConsented() {
+  return consentState() === POLICY_VERSION;
+}
+
+function saveConsent() {
+  try { localStorage.setItem(CONSENT_KEY, POLICY_VERSION); } catch (_) { /* 隐私模式忽略 */ }
+}
+
+function withdrawConsent() {
+  try { localStorage.removeItem(CONSENT_KEY); } catch (_) { /* 忽略 */ }
+}
+
+function consentInputs() {
+  return { privacy: $("#consentPrivacy"), terms: $("#consentTerms") };
+}
+
+function syncConsentButton() {
+  const { privacy, terms } = consentInputs();
+  $("#consentAgree").disabled = !(privacy.checked && terms.checked);
+}
+
+function showConsentAsk() {
+  const { privacy, terms } = consentInputs();
+  privacy.checked = false;
+  terms.checked = false;
+  syncConsentButton();
+  $("#consentAsk").classList.remove("hidden");
+  $("#consentDeclined").classList.add("hidden");
+}
+
+function showConsentDeclined() {
+  $("#consentAsk").classList.add("hidden");
+  $("#consentDeclined").classList.remove("hidden");
+}
+
+/* 仅展示同意层，不发起任何请求 */
+function openConsentGate() {
+  I18N.applyI18n();
+  showConsentAsk();
+  $("#consentGate").classList.remove("hidden");
+}
+
+function closeConsentGate() {
+  $("#consentGate").classList.add("hidden");
+}
+
+/* ================= 数据管理 ================= */
+function downloadJson(filename, data) {
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+async function exportData() {
+  setStatus("#dataResult", () => t("common.busy"), "busy");
+  try {
+    const data = await api("GET", "/api/data/export");
+    const n = (data.entries || []).length;
+    downloadJson(`calorie-tracker-backup-${today()}.json`, data);
+    setStatus("#dataResult", () => t("data.exported", { n }), "ok");
+  } catch (err) {
+    setStatus("#dataResult", () => t("data.exportFail", { msg: err.message }), "err");
+  }
+}
+
+async function clearData() {
+  if (!window.confirm(t("confirm.clear"))) return;
+  if (!window.confirm(t("confirm.clearAgain"))) return;
+  setStatus("#dataResult", () => t("common.busy"), "busy");
+  try {
+    const res = await api("POST", "/api/data/clear", {});
+    const r = res.removed || {};
+    setStatus("#dataResult", () => t("data.cleared", {
+      profiles: r.profiles || 0, entries: r.entries || 0, reports: r.reports || 0,
+    }), "ok");
+    state.report = null;
+    state.draft = [];
+    state.draftNotes = "";
+    renderDraft();
+    $("#reportView").innerHTML = "";
+    await loadDay();
+    await loadProfile();
+  } catch (err) {
+    setStatus("#dataResult", () => t("data.clearFail", { msg: err.message }), "err");
+  }
+}
+
 /* ================= 更新日志 ================= */
 async function fetchChangelog() {
   try {
@@ -953,11 +1073,40 @@ function refreshLanguage() {
 /* ================= 初始化与事件绑定 ================= */
 function init() {
   setTheme((() => { try { return localStorage.getItem("ct.theme"); } catch (_) { return null; } })(), false);
+  I18N.setLang(I18N.getLang());   // 确保 <html lang> 与生效语言一致
   I18N.applyI18n();
   $("#langSelect").value = I18N.getLang();
+
+  /* ---- 本机访问口令：安卓壳以 URL 片段注入（片段不会发送给服务器） ---- */
+  try {
+    const m = /(?:^|[#&])token=([A-Za-z0-9_-]{8,})/.exec(location.hash || "");
+    if (m) {
+      localStorage.setItem("ct.token", m[1]);
+      history.replaceState(null, "", location.pathname + location.search);
+    }
+  } catch (_) { /* 忽略：无口令时后端也不校验 */ }
+
+  /* ---- 同意流程：未同意前不发起任何网络请求 ---- */
+  $("#consentPrivacy").addEventListener("change", syncConsentButton);
+  $("#consentTerms").addEventListener("change", syncConsentButton);
+  $("#consentAgree").addEventListener("click", () => {
+    const { privacy, terms } = consentInputs();
+    if (!privacy.checked || !terms.checked) return;
+    saveConsent();
+    closeConsentGate();
+    startApp();
+  });
+  $("#consentDecline").addEventListener("click", showConsentDeclined);
+  $("#consentRetry").addEventListener("click", showConsentAsk);
+
   $("#langSelect").addEventListener("change", (e) => {
     readDraftEdits();  // 先保存草稿输入，再切换语言
     I18N.setLang(e.target.value);
+    if (!$("#consentGate").classList.contains("hidden")) {
+      I18N.applyI18n();          // 同意层可见时只刷新文案，不触碰数据
+      $("#langSelect").value = I18N.getLang();
+      return;
+    }
     refreshLanguage();
   });
 
@@ -1050,6 +1199,15 @@ function init() {
     if (tgt.dataset.resetPrompt) resetPrompt(tgt.dataset.resetPrompt);
   });
 
+  /* ---- 数据管理 ---- */
+  $("#btnExportData").addEventListener("click", exportData);
+  $("#btnClearData").addEventListener("click", clearData);
+  $("#btnWithdrawConsent").addEventListener("click", () => {
+    if (!window.confirm(t("confirm.withdraw"))) return;
+    withdrawConsent();
+    location.reload();
+  });
+
   $("#clClose").addEventListener("click", closeChangelog);
   $("#changelogModal").addEventListener("click", (e) => { if (e.target === e.currentTarget) closeChangelog(); });
   $("#btnChangelog").addEventListener("click", async () => {
@@ -1059,6 +1217,18 @@ function init() {
 
   renderDraft();
   renderHealth();
+
+  /* 未同意：只显示同意层并结束初始化——不联网、不加载任何数据。
+     同意按钮的回调会调用 startApp() 继续。 */
+  if (!hasConsented()) {
+    openConsentGate();
+  } else {
+    startApp();
+  }
+}
+
+/* 取得同意后才执行：健康检查、加载数据、必要时弹更新日志 */
+function startApp() {
   checkHealth().then((ok) => { if (ok) loadDay(); }).finally(maybeShowChangelog);
 }
 

@@ -4,12 +4,52 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#eef0e6">
+  <meta name="referrer" content="no-referrer">
   <title data-i18n="page.title">热量管理</title>
   <script>/* 配色在首次绘制前生效，避免闪色；合法性由 app.js 的 setTheme 再校验 */try{var th=localStorage.getItem("ct.theme");if(th)document.documentElement.setAttribute("data-theme",th)}catch(e){}</script>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 36 36'%3E%3Crect width='36' height='36' rx='11' fill='%232f5d2c'/%3E%3Ccircle cx='14' cy='18' r='6.2' fill='none' stroke='%23fff' stroke-width='3'/%3E%3Ccircle cx='22.5' cy='18' r='6.2' fill='none' stroke='%23f0a35e' stroke-width='3'/%3E%3C/svg%3E">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
+  <!-- 首次启动同意（合规必需）：未同意前不发起任何网络请求，也不读取任何数据。
+       本层不是可关闭的普通弹窗：不同意时停留在「已拒绝」状态，只能查看文档或退出。 -->
+  <div id="consentGate" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="consentTitle">
+    <div class="modal-card consent-card">
+      <h2 id="consentTitle" data-i18n="consent.title">隐私政策与用户协议</h2>
+
+      <div id="consentAsk">
+        <p class="hint lead" data-i18n-html="consent.lead"></p>
+        <label class="check consent-check">
+          <input type="checkbox" id="consentPrivacy">
+          <span data-i18n-html="consent.p1"></span>
+        </label>
+        <label class="check consent-check">
+          <input type="checkbox" id="consentTerms">
+          <span data-i18n-html="consent.p2"></span>
+        </label>
+        <p class="hint"><a href="privacy.html" target="_blank" rel="noopener" data-i18n="legal.privacy">隐私政策</a>
+          ·
+          <a href="terms.html" target="_blank" rel="noopener" data-i18n="legal.terms">用户协议</a></p>
+        <div class="row end">
+          <button type="button" id="consentDecline" data-i18n="consent.decline">不同意</button>
+          <button type="button" id="consentAgree" class="primary" disabled data-i18n="consent.agree">同意并继续</button>
+        </div>
+        <p class="hint" data-i18n="consent.hint">同意状态仅记录在本设备上，可随时在「设置 → 数据管理」中撤回。</p>
+      </div>
+
+      <div id="consentDeclined" class="hidden">
+        <p class="status err" data-i18n="consent.declined"></p>
+        <div class="row">
+          <a class="btn-link" href="privacy.html" target="_blank" rel="noopener" data-i18n="legal.privacyOpen">在浏览器中打开隐私政策</a>
+          <a class="btn-link" href="terms.html" target="_blank" rel="noopener" data-i18n="legal.termsOpen">在浏览器中打开用户协议</a>
+        </div>
+        <div class="row end">
+          <button type="button" id="consentRetry" class="primary" data-i18n="consent.retry">返回并重新选择</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- 图标精灵：线性图标，颜色继承 currentColor（样式见 style.css 的 .ico） -->
   <svg class="sprite" width="0" height="0" aria-hidden="true" focusable="false">
     <symbol id="i-log" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="5"/><path d="M12 8.5v7M8.5 12h7"/></symbol>
@@ -94,6 +134,7 @@
 
       <div class="card" id="draftCard" hidden>
         <h2 data-i18n="draft.h">估算草稿（未保存）</h2>
+        <p class="ai-badge" data-i18n="ai.badge">AI 生成，仅供参考</p>
         <div id="draftNotes" class="hint"></div>
         <div id="draftBody" class="entries"></div>
         <div class="row">
@@ -304,9 +345,38 @@
       </details>
 
       <details class="card fold">
+        <summary><h2 data-i18n="legal.h">隐私与协议</h2><svg class="ico chev" aria-hidden="true"><use href="#i-chev-d"/></svg></summary>
+        <div class="fold-body">
+          <p class="hint" data-i18n="legal.hint">您可以在应用内查看完整文档，也可以复制链接后在浏览器中打开。</p>
+          <div class="row">
+            <a class="btn-link" href="privacy.html" target="_blank" rel="noopener" data-i18n="legal.privacyOpen">在浏览器中打开隐私政策</a>
+            <a class="btn-link" href="terms.html" target="_blank" rel="noopener" data-i18n="legal.termsOpen">在浏览器中打开用户协议</a>
+          </div>
+        </div>
+      </details>
+
+      <details class="card fold">
+        <summary><h2 data-i18n="data.h">数据管理</h2><svg class="ico chev" aria-hidden="true"><use href="#i-chev-d"/></svg></summary>
+        <div class="fold-body">
+          <p class="hint" data-i18n="data.hint">您的全部数据都保存在本机。这里可以导出备份，或一次性删除全部数据。</p>
+          <h3 data-i18n="data.export">导出全部数据</h3>
+          <p class="hint" data-i18n="data.exportHint">下载 JSON 文件，包含身体数据、饮食与运动记录、报告与配置（不含 API Key 明文）。</p>
+          <div class="row"><button type="button" id="btnExportData" data-i18n="data.export">导出全部数据</button></div>
+          <h3 data-i18n="data.clear">清除全部数据</h3>
+          <p class="hint" data-i18n="data.clearHint">删除本机全部身体数据、记录与报告，此操作不可撤销。</p>
+          <div class="row"><button type="button" id="btnClearData" class="danger" data-i18n="data.clear">清除全部数据</button></div>
+          <h3 data-i18n="data.withdraw">撤回隐私政策同意</h3>
+          <p class="hint" data-i18n="data.withdrawHint">撤回后将返回同意页并停止使用应用，本机数据不会被自动删除。</p>
+          <div class="row"><button type="button" id="btnWithdrawConsent" data-i18n="data.withdraw">撤回隐私政策同意</button></div>
+          <div id="dataResult" class="status"></div>
+        </div>
+      </details>
+
+      <details class="card fold">
         <summary><h2 data-i18n="about.h">关于</h2><svg class="ico chev" aria-hidden="true"><use href="#i-chev-d"/></svg></summary>
         <div class="fold-body">
           <div class="row"><button type="button" id="btnChangelog" data-i18n="btn.changelog">查看更新日志</button></div>
+          <p class="hint" data-i18n="legal.footerDisclaimer">热量与代谢数值由程序计算或 AI 估算，可能存在误差，不构成医疗建议。</p>
           <details class="advanced">
             <summary data-i18n="adv.summary">高级：后端地址</summary>
             <label><span data-i18n="adv.apiBase">后端地址（留空 = 同源）</span>

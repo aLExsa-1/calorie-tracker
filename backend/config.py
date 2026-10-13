@@ -64,6 +64,17 @@ class Config:
         tmp.replace(self.path)
 
     # ---------- 对外视图（不含明文 Key） ----------
+    def export_view(self) -> dict:
+        """导出用的配置快照：与界面可见内容一致，**不含任何明文 API Key**。"""
+        with self._lock:
+            return {
+                "llm_profiles": [_mask(p) for p in self.data["llm_profiles"]],
+                "active_llm_id": self.data["active_llm_id"],
+                "task_llm": dict(self.data["task_llm"]),
+                "search": _mask(self.data["search"]),
+                "prompt_overrides": dict(self.data["prompt_overrides"]),
+            }
+
     def public(self) -> dict:
         with self._lock:
             return {

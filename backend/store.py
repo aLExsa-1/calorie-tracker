@@ -67,6 +67,39 @@ class Store:
     def close(self) -> None:
         self.conn.close()
 
+    # ---------- 数据导出与删除（用户权利：查阅、可携带、删除） ----------
+    def export_all(self) -> dict:
+        """导出全部本地数据，供用户下载留存。
+
+        不含 LLM / 搜索服务的 API Key —— 那部分由 Config.export_view() 处理，
+        导出文件里同样只保留脱敏信息，避免用户在分享导出文件时泄露密钥。
+        """
+        with self._lock:
+            profiles = self.conn.execute(
+                "SELECT id, effective_date, data, created_at FROM profiles ORDER BY effective_date, id").fetchall()
+            entries = self.conn.execute(
+                "SELECT * FROM entries ORDER BY date, id").fetchall()
+            reports = self.conn.execute(
+                "SELECT * FROM reports ORDER BY id").fetchall()
+        return {
+            "profiles": [{"id": r["id"], "effective_date": r["effective_date"],
+                          "created_at": r["created_at"], "data": json.loads(r["data"])} for r in profiles],
+            "entries": [dict(r) for r in entries],
+            "reports": [{"id": r["id"], "period": r["period"], "start": r["start"], "end": r["end"],
+                         "created_at": r["created_at"], "stats": json.loads(r["stats"]),
+                         "analysis": json.loads(r["analysis"]) if r["analysis"] else None} for r in reports],
+        }
+
+    def clear_all(self) -> dict:
+        """删除全部本地数据：身体数据版本、饮食/运动记录、报告。返回各类删除条数。"""
+        with self._lock:
+            counts = {}
+            for table, key in (("profiles", "profiles"), ("entries", "entries"), ("reports", "reports")):
+                counts[key] = self.conn.execute(f"SELECT COUNT(*) AS n FROM {table}").fetchone()["n"]
+                self.conn.execute(f"DELETE FROM {table}")
+            self.conn.commit()
+        return counts
+
     # ---------- 身体数据 ----------
     def profile_on(self, day: str) -> dict:
         with self._lock:
@@ -160,3 +193,9 @@ class Store:
                 "stats": json.loads(row["stats"]),
                 "analysis": json.loads(row["analysis"]) if row["analysis"] else None,
                 "created_at": row["created_at"]}
+
+    def delete_report(self, rid: int) -> bool:
+        with self._lock:
+            cur = self.conn.execute("DELETE FROM reports WHERE id = ?", (rid,))
+            self.conn.commit()
+        return cur.rowcount > 0

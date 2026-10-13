@@ -4,9 +4,10 @@ from __future__ import annotations
 import json
 import mimetypes
 import re
+import secrets
 import sys
 import traceback
-from datetime import date
+from datetime import date, datetime
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, unquote, urlparse
@@ -15,7 +16,7 @@ from .config import ConfigError
 from .engine import ApiError, Engine
 from .schemas import SchemaError
 
-VERSION = "0.3.0"
+VERSION = "0.3.1"
 WEB_DIR = Path(__file__).resolve().parent.parent / "frontend"
 
 
@@ -121,6 +122,19 @@ def _routes(e: Engine):
          lambda m, q, b: (200, e.report(b.get("period", "week"), _day(b.get("date")), bool(b.get("analyze"))))),
         ("GET", r"/api/reports", lambda m, q, b: (200, {"reports": s.list_reports()})),
         ("GET", r"/api/reports/(\d+)", lambda m, q, b: (200, _report_or_404(s, int(m[1])))),
+        ("DELETE", r"/api/reports/(\d+)", lambda m, q, b: (s.delete_report(int(m[1])), (200, {"ok": True}))[1]),
+
+        # 用户权利：数据可携带（导出）与删除（清除全部本地数据）
+        ("GET", r"/api/data/export", lambda m, q, b: (200, {
+            "app": "calorie-tracker", "version": VERSION,
+            "exported_at": datetime.now().isoformat(timespec="seconds"),
+            "notice": "本文件由用户主动导出，含个人健康数据；不含任何 API Key。",
+            "config": c.export_view(),
+            **s.export_all(),
+        })),
+        ("POST", r"/api/data/clear", lambda m, q, b: (200, {
+            "ok": True, "removed": s.clear_all(),
+        })),
     ]
 
 
@@ -130,10 +144,43 @@ class Handler(BaseHTTPRequestHandler):
     def log_message(self, fmt, *args):  # 保持控制台安静
         pass
 
+    # ---------- 本机访问校验 ----------
+    # 服务只监听回环地址，但仍需防止「设备上其他应用/浏览器页面」直接调用本接口：
+    #   1) Host 头必须是回环地址 —— 阻止 DNS rebinding 从外部域名解析到 127.0.0.1；
+    #   2) 若宿主设置了访问口令（安卓端由 MainActivity 随机生成并注入 WebView），
+    #      则要求携带 X-CT-Token；口令为空时（电脑版直接打开浏览器）跳过校验。
+    def _loopback_host(self) -> bool:
+        host = (self.headers.get("Host") or "").strip()
+        if host.startswith("["):                      # IPv6 字面量：[::1]:8787
+            name = host[1:host.find("]")] if "]" in host else host
+        elif ":" in host:
+            name = host.rsplit(":", 1)[0]
+        else:
+            name = host
+        return name in ("127.0.0.1", "localhost", "::1", "[::1]")
+
+    def _token_ok(self) -> bool:
+        token = getattr(self.server, "token", None)
+        if not token:
+            return True
+        supplied = self.headers.get("X-CT-Token") or ""
+        return secrets.compare_digest(supplied, token)
+
     def _cors(self):
-        self.send_header("Access-Control-Allow-Origin", "*")
+        # 只对回环来源回显，不再使用通配符，避免任意网页跨源读取本地健康数据。
+        origin = (self.headers.get("Origin") or "").strip()
+        if origin:
+            try:
+                host = urlparse(origin).hostname or ""
+            except ValueError:
+                host = ""
+            if host in ("127.0.0.1", "localhost", "::1"):
+                self.send_header("Access-Control-Allow-Origin", origin)
+                self.send_header("Vary", "Origin")
         self.send_header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-        self.send_header("Access-Control-Allow-Headers", "Content-Type")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type, X-CT-Token")
+        self.send_header("Referrer-Policy", "no-referrer")
+        self.send_header("X-Content-Type-Options", "nosniff")
 
     def _send(self, status: int, body: bytes, content_type: str) -> None:
         self.send_response(status)
@@ -182,6 +229,13 @@ class Handler(BaseHTTPRequestHandler):
         path = unquote(parsed.path)
         if not path.startswith("/api/"):
             return self._static(path)
+
+        # 本机访问校验（见 _loopback_host / _token_ok 的说明）
+        if not self._loopback_host():
+            return self._send_json(403, {"error": "仅允许本机访问"})
+        if not self._token_ok():
+            return self._send_json(403, {"error": "缺少或错误的本机访问口令"})
+
         query = {k: v[-1] for k, v in parse_qs(parsed.query).items()}
         try:
             body = self._read_body() if method in ("POST", "PUT") else {}
@@ -214,7 +268,14 @@ class Handler(BaseHTTPRequestHandler):
         self._send(200, target.read_bytes(), ctype)
 
 
-def make_server(engine: Engine, host: str = "127.0.0.1", port: int = 8787) -> ThreadingHTTPServer:
+def make_server(engine: Engine, host: str = "127.0.0.1", port: int = 8787,
+                token: str | None = None) -> ThreadingHTTPServer:
+    """创建 HTTP 服务。
+
+    token 为空时不做口令校验（电脑版：用户直接在浏览器打开，天然只有本人可达）；
+    安卓端由 MainActivity 传入随机口令并注入 WebView，阻止设备上其他应用调用本接口。
+    """
     httpd = ThreadingHTTPServer((host, port), Handler)
     httpd.engine = engine
+    httpd.token = token
     return httpd

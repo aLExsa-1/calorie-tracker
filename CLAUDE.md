@@ -1,8 +1,7 @@
 # CLAUDE.md — calorie-tracker 协作规则（v2）
 
 会话开始必须加载并遵守。价格、基准分数、详细理由见 `docs/model-routing-reference.md`（按需读取，不要常驻）。
-适用模型：~anthropic/claude-sonnet-latest（主脑）/ ~anthropic/claude-haiku-latest / z-ai/glm-5.3，均经 OpenRouter 接入 Claude Desktop。
-
+适用模型：~anthropic/claude-sonnet-latest（主脑）/ ~anthropic/claude-haiku-latest / z-ai/glm-5.3，均经 OpenRouter 接入 
 ## 一、原则（先看这条）
 
 1. **默认单模型**：一个任务若只涉及 1–2 个文件、改动小于约 50 行，就在当前会话直接做完，**不要分派**。分派要重新交代背景、丢失缓存、多一轮审查，小任务里这些开销比省下的差价还大。
@@ -57,7 +56,7 @@
 
 ## 五、验收与交付
 
-1. 改动后运行 `python -m unittest tests.test_e2e`：**全部通过，且用例数不得减少**（当前 40 项，写测试后以实际数为准并更新此处）。
+1. 改动后运行 `python -m unittest tests.test_e2e`：**全部通过，且用例数不得减少**（当前 55 项，写测试后以实际数为准并更新此处）。
 2. 改过 `backend/` 或 `frontend/` → `python .android-build/sync_app.py` → `node .android-build/build_apk.js assembleRelease` → `python .android-build/finalize_apk.py`。
 3. 多文件改动合并后，Sonnet 审查 diff（只审不重写）。**本目录目前不是 git 仓库，没有 diff 可审也无法回滚**——先 `git init` 并做一次基线提交（见 `.gitignore` 说明），否则多模型并行改动无法追溯。
 4. 涉及安卓壳的交付必须附「真机复测清单」：安装 → 首次启动 → 设置页填档案 → 测试连接 → 四类 AI 任务 → 报告页。在用户的真我 GT Neo5 上人工验证通过前，不得宣称完成。修复后的 0.1beta APK 至今未经真机复测。

@@ -6,6 +6,7 @@ import android.net.Uri;
 import android.net.http.SslError;
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Base64;
 import android.util.Log;
 import android.view.View;
 import android.webkit.SslErrorHandler;
@@ -25,6 +26,7 @@ import com.chaquo.python.Python;
 import com.chaquo.python.android.AndroidPlatform;
 
 import java.io.File;
+import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -35,9 +37,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * 启动顺序：
  *   1. 显示加载页；
  *   2. 后台线程启动 Chaquopy 与本地 HTTP 服务（127.0.0.1:8787）；
- *   3. 服务就绪后用 WebView 打开 http://127.0.0.1:8787/。
+ *   3. 服务就绪后用 WebView 打开 http://127.0.0.1:8787/#token=…。
  *
  * 数据（ct.db / config.json）保存在应用私有目录 files/data 下，随应用卸载删除。
+ * 本地服务需要随机访问口令：设备上其他应用即使能连到 127.0.0.1:8787，
+ * 没有口令也无法读取健康数据或 API Key（口令经 URL 片段注入，片段不会发给服务器）。
  */
 public class MainActivity extends AppCompatActivity {
 
@@ -46,11 +50,21 @@ public class MainActivity extends AppCompatActivity {
 
     private static final int FILE_CHOOSER_REQUEST = 1001;
 
+    /** 本次运行的本地服务访问口令；校验在后端 server.py 中完成。 */
+    private String accessToken = "";
+
     private WebView web;
     private TextView status;
     private ValueCallback<Uri[]> filePathCallback;
     private volatile boolean serverReady = false;
     private volatile String startupError = null;
+
+    /** 生成 URL 安全（仅 A-Za-z0-9_-）的随机口令。 */
+    private static String newAccessToken() {
+        byte[] raw = new byte[32];
+        new SecureRandom().nextBytes(raw);
+        return Base64.encodeToString(raw, Base64.URL_SAFE | Base64.NO_WRAP | Base64.NO_PADDING);
+    }
 
     @Override
     @SuppressLint("SetJavaScriptEnabled")
@@ -72,7 +86,8 @@ public class MainActivity extends AppCompatActivity {
         s.setSupportZoom(false);
         s.setCacheMode(WebSettings.LOAD_NO_CACHE);
         s.setMediaPlaybackRequiresUserGesture(true);
-        s.setMixedContentMode(WebSettings.MIXED_CONTENT_COMPATIBILITY_MODE);
+        // 禁止混合内容：HTTPS 页面不得加载 HTTP 资源（审核与安全扫描关注项）。
+        s.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
         s.setTextZoom(100);
 
         web.setBackgroundColor(Color.parseColor("#eef0e6"));
@@ -143,6 +158,7 @@ public class MainActivity extends AppCompatActivity {
 
     /** 启动 Chaquopy 与本地服务；整个过程放在后台线程，避免阻塞界面。 */
     private void startPythonBackend() {
+        accessToken = newAccessToken();
         final AtomicBoolean started = new AtomicBoolean(false);
         new Thread(() -> {
             try {
@@ -176,7 +192,7 @@ public class MainActivity extends AppCompatActivity {
                 Log.i(TAG, "Chaquopy 解压路径：" + java.util.Arrays.toString(extraDirs));
 
                 String info = bootstrap.callAttr("start", getFilesDir().getAbsolutePath(),
-                        (long) LOOPBACK_PORT, extraDirs).toString();
+                        (long) LOOPBACK_PORT, extraDirs, accessToken).toString();
                 Log.i(TAG, "后端已启动：" + info);
                 started.set(true);
             } catch (Throwable t) {
@@ -205,10 +221,13 @@ public class MainActivity extends AppCompatActivity {
                     c.setConnectTimeout(1500);
                     c.setReadTimeout(1500);
                     c.setRequestMethod("GET");
+                    c.setRequestProperty("X-CT-Token", accessToken);
                     int code = c.getResponseCode();
                     c.disconnect();
                     if (code == 200) {
-                        final String url = base + "/";
+                        // 口令经 URL 片段传给前端：片段不会出现在 HTTP 请求里，
+                        // 前端读取后写入 localStorage 并清除地址栏片段。
+                        final String url = base + "/#token=" + accessToken;
                         runOnUiThread(() -> {
                             serverReady = true;
                             tv.setText("正在打开界面…");

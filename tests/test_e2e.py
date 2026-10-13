@@ -21,16 +21,22 @@ from backend.store import Store  # noqa: E402
 from mock_llm import MockServer  # noqa: E402
 
 
-def call(base, method, path, body=None):
+def call(base, method, path, body=None, headers=None):
     data = json.dumps(body).encode("utf-8") if body is not None else None
-    req = urllib.request.Request(base + path, data=data, method=method,
-                                 headers={"Content-Type": "application/json"})
+    send = {"Content-Type": "application/json"}
+    send.update(headers or {})
+    req = urllib.request.Request(base + path, data=data, method=method, headers=send)
     try:
         with urllib.request.urlopen(req, timeout=30) as resp:
             return resp.status, json.loads(resp.read().decode("utf-8") or "{}")
     except urllib.error.HTTPError as exc:
         with exc:
             return exc.code, json.loads(exc.read().decode("utf-8") or "{}")
+
+
+def call_tok(base, token, method, path, body=None):
+    """带本机访问口令调用（安卓端的调用方式）。"""
+    return call(base, method, path, body, headers={"X-CT-Token": token})
 
 
 class E2E(unittest.TestCase):
@@ -74,17 +80,17 @@ class E2E(unittest.TestCase):
         self.assertEqual(s, 200)
         self.assertTrue(body["ok"])
 
-    def test_health_version_is_0_3_0(self):
+    def test_health_version_is_0_3_1(self):
         s, body = call(self.base, "GET", "/api/health")
         self.assertEqual(s, 200)
-        self.assertEqual(body["version"], "0.3.0")
+        self.assertEqual(body["version"], "0.3.1")
 
     def test_changelog_json_served(self):
         import json as _json
         import urllib.request
         with urllib.request.urlopen(self.base + "/changelog.json", timeout=5) as r:
             data = _json.loads(r.read().decode("utf-8"))
-        self.assertEqual(data["version"], "0.3.0")
+        self.assertEqual(data["version"], "0.3.1")
         self.assertTrue(len(data["items"]) >= 1)
     def test_llm_profile_crud_masks_key(self):
         pid = self.add_llm("A")
@@ -504,12 +510,12 @@ class E2E(unittest.TestCase):
     def test_changelog_has_030_in_history_zh_and_en(self):
         import json as _json
         data = _json.loads(self._front("changelog.json"))
-        self.assertEqual(data["version"], "0.3.0")
-        self.assertEqual(data["history"][0]["version"], "0.3.0")
+        self.assertEqual(data["version"], "0.3.1")
+        self.assertEqual(data["history"][0]["version"], "0.3.1")
         for h in data["history"]:
             self.assertTrue(h["items"] and h["items_en"], f"v{h['version']} 缺少中文或英文条目")
         self.assertEqual(len(data["history"][0]["items"]), len(data["history"][0]["items_en"]))
-        self.assertEqual([h["version"] for h in data["history"]][:3], ["0.3.0", "0.2.1", "0.2.0"])
+        self.assertEqual([h["version"] for h in data["history"]][:4], ["0.3.1", "0.3.0", "0.2.1", "0.2.0"])
 
     def test_i18n_keys_used_in_js_and_html_exist(self):
         import re
@@ -530,6 +536,218 @@ class E2E(unittest.TestCase):
             status, body = exc.code, ""
         self.assertEqual(status, 404)
         self.assertNotIn("class Config", body)
+
+    # ---------------- 合规：同意文档 ----------------
+    def test_privacy_and_terms_pages_served_bilingual(self):
+        """隐私政策与用户协议必须是可访问的静态页，且中英文内容都在同一个文件里。"""
+        for path, must_have in (("/privacy.html", ("隐私政策", "Privacy Policy")),
+                                ("/terms.html", ("用户协议", "User Agreement"))):
+            with urllib.request.urlopen(self.base + path, timeout=10) as resp:
+                self.assertEqual(resp.status, 200, path)
+                html = resp.read().decode("utf-8")
+            for text in must_have:
+                self.assertIn(text, html, f"{path} 缺少 {text}")
+            # 两个语言块都要在，切换按钮才有效
+            self.assertIn('data-lang-block="zh-CN"', html)
+            self.assertIn('data-lang-block="en"', html)
+
+    def test_privacy_policy_covers_mandatory_topics(self):
+        """合规必备章节：数据种类、存储、第三方共享/出境、权限、用户权利、未成年人、联系方式。"""
+        html = (ROOT / "frontend" / "privacy.html").read_text(encoding="utf-8")
+        for topic in ("不收集", "API Key", "第三方", "出境", "权限", "导出", "删除",
+                      "未成年人", "联系", "ACCESS_NETWORK_STATE"):
+            self.assertIn(topic, html, f"隐私政策缺少必备内容：{topic}")
+
+    def test_terms_disclaims_medical_advice(self):
+        html = (ROOT / "frontend" / "terms.html").read_text(encoding="utf-8")
+        self.assertIn("不是医疗器械", html)
+        self.assertIn("不构成医疗建议", html)
+        self.assertIn("责任限制", html)
+        # 英文侧同样要有免责
+        self.assertIn("not a medical device", html)
+        self.assertIn("do not constitute medical advice", html)
+
+    def test_consent_gate_blocks_network_until_agreed(self):
+        """同意层必须先于任何网络请求：未同意时 init 只打开同意层，联网动作全部在 startApp 里。"""
+        js = self._front("app.js")
+        for needle in ("CONSENT_KEY", "POLICY_VERSION", "function hasConsented()",
+                       "function openConsentGate()", "function startApp()"):
+            self.assertIn(needle, js)
+        init_body = js.split("\nfunction init()", 1)[1].split("\n/* 取得同意后才执行", 1)[0]
+        # init 的收尾必须是「未同意 → 只开同意层；已同意 → startApp」的二选一
+        tail = init_body.rsplit("if (!hasConsented())", 1)[1]
+        self.assertIn("openConsentGate();", tail)
+        self.assertIn("} else {", tail, "未同意时不得落到 startApp 分支")
+        self.assertIn("startApp();", tail)
+        # 未同意分支内部不能有联网调用
+        branch = tail.split("} else {", 1)[0]
+        for net in ("startApp()", "checkHealth()", "loadDay()", "loadProfile()", "maybeShowChangelog"):
+            self.assertNotIn(net, branch, f"未同意分支里不得调用 {net}")
+        # 首次联网只能由 startApp 触发
+        start_body = js.split("\nfunction startApp()", 1)[1].split("\ndocument.addEventListener", 1)[0]
+        self.assertIn("checkHealth()", start_body)
+        self.assertIn("maybeShowChangelog", start_body)
+        # 同意按钮的回调负责在同意后启动
+        agree = js.split('$("#consentAgree").addEventListener("click"', 1)[1].split("});", 1)[0]
+        self.assertIn("saveConsent();", agree)
+        self.assertIn("startApp();", agree)
+
+    def test_consent_ui_ids_match_between_html_and_js(self):
+        import re
+        html, js = self._front("index.html"), self._front("app.js")
+        html_ids = set(re.findall(r'\bid="([^"]+)"', html))
+        for el in ("consentGate", "consentAgree", "consentDecline", "consentRetry",
+                   "consentPrivacy", "consentTerms", "consentAsk", "consentDeclined",
+                   "btnExportData", "btnClearData", "btnWithdrawConsent", "dataResult"):
+            self.assertIn(el, html_ids, f"index.html 缺少同意/数据管理元素 {el}")
+            self.assertIn(f'"#{el}"', js, f"app.js 未绑定 {el}")
+
+    def test_app_discloses_ai_content_and_medical_disclaimer(self):
+        js = self._front("app.js")
+        self.assertIn('t("ai.badge")', js)
+        self.assertIn('t("ai.disclaimer")', js)
+        self.assertIn('t("legal.footerDisclaimer")', js)
+        html = self._front("index.html")
+        self.assertIn('data-i18n="ai.badge"', html)
+
+
+class DataRightsAndLocalAccess(unittest.TestCase):
+    """数据导出/删除（用户权利）与本地服务访问控制。"""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.data = ROOT / "tests" / ".data" / f"compliance-{threading.get_ident()}"
+        cls.data.mkdir(parents=True, exist_ok=True)
+        cls.engine = Engine(Store(cls.data / "ct.db"), Config(cls.data / "config.json"))
+        # 带口令启动：安卓端就是这种模式
+        cls.token = "unit-test-token-0123456789"
+        cls.httpd = make_server(cls.engine, "127.0.0.1", 0, token=cls.token)
+        cls.base = f"http://127.0.0.1:{cls.httpd.server_address[1]}"
+        threading.Thread(target=cls.httpd.serve_forever, daemon=True).start()
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.httpd.shutdown()
+        cls.httpd.server_close()
+        cls.engine.store.close()
+
+    def setUp(self):
+        # 每个用例从干净状态开始
+        call_tok(self.base, self.token, "POST", "/api/data/clear", {})
+
+    # --- helpers
+    def seed(self):
+        s, _ = call_tok(self.base, self.token, "PUT", "/api/profile", {
+            "effective_date": "2025-01-01", "sex": "female", "age": 30,
+            "height_cm": 165, "weight_kg": 55, "activity_text": "久坐",
+            "goal_text": "减脂", "bmr_kcal": 1300, "maintenance_kcal": 1800,
+        })
+        self.assertEqual(s, 200)
+        s, body = call_tok(self.base, self.token, "POST", "/api/entries", {
+            "date": "2025-01-02",
+            "items": [{"kind": "food", "name": "米饭", "grams": 200, "kcal": 232, "meal": "午餐"},
+                      {"kind": "activity", "name": "快走", "minutes": 40, "kcal": 150}],
+        })
+        self.assertEqual(s, 201, body)
+
+    # --- 访问控制
+    def test_api_rejects_missing_or_wrong_token(self):
+        for headers in ({}, {"X-CT-Token": "wrong-token"}):
+            s, body = call(self.base, "GET", "/api/profile", headers=headers)
+            self.assertEqual(s, 403, body)
+            self.assertIn("口令", body["error"])
+
+    def test_api_accepts_correct_token(self):
+        s, body = call_tok(self.base, self.token, "GET", "/api/health")
+        self.assertEqual(s, 200)
+        self.assertTrue(body["ok"])
+
+    def test_static_pages_need_no_token(self):
+        """静态资源不校验口令，否则 WebView 加载页面本身就会失败。"""
+        for path in ("/", "/app.js", "/privacy.html", "/terms.html", "/style.css"):
+            with urllib.request.urlopen(self.base + path, timeout=10) as resp:
+                self.assertEqual(resp.status, 200, path)
+
+    def test_non_loopback_host_header_rejected(self):
+        """DNS rebinding 防护：Host 不是回环地址时拒绝。"""
+        s, body = call(self.base, "GET", "/api/health", headers={"Host": "evil.example.com"})
+        self.assertEqual(s, 403, body)
+        self.assertIn("本机", body["error"])
+
+    def test_cors_not_wildcard(self):
+        """跨源头不得使用通配符，只对回环来源回显。"""
+        import urllib.request as _u
+        req = _u.Request(self.base + "/api/health", method="GET",
+                         headers={"X-CT-Token": self.token, "Origin": "https://evil.example.com"})
+        with _u.urlopen(req, timeout=10) as resp:
+            self.assertIsNone(resp.headers.get("Access-Control-Allow-Origin"))
+            self.assertEqual(resp.headers.get("Referrer-Policy"), "no-referrer")
+            self.assertEqual(resp.headers.get("X-Content-Type-Options"), "nosniff")
+        req2 = _u.Request(self.base + "/api/health", method="GET",
+                          headers={"X-CT-Token": self.token, "Origin": "http://127.0.0.1:8787"})
+        with _u.urlopen(req2, timeout=10) as resp:
+            self.assertEqual(resp.headers.get("Access-Control-Allow-Origin"), "http://127.0.0.1:8787")
+
+    # --- 数据导出
+    def test_export_contains_all_data_without_api_key_secrets(self):
+        self.seed()
+        call_tok(self.base, self.token, "POST", "/api/config/llm", {
+            "name": "secret-profile", "protocol": "openai", "model": "m",
+            "base_url": "https://api.example.com/v1", "api_key": "sk-super-secret-9876",
+        })
+        s, dump = call_tok(self.base, self.token, "GET", "/api/data/export")
+        self.assertEqual(s, 200)
+        self.assertEqual(dump["app"], "calorie-tracker")
+        self.assertEqual(dump["version"], "0.3.1")
+        self.assertTrue(dump["exported_at"])
+        # 全量数据
+        self.assertEqual(len(dump["entries"]), 2)
+        self.assertEqual(len(dump["profiles"]), 1)
+        self.assertEqual(dump["profiles"][0]["data"]["weight_kg"], 55)
+        # 配置在，但密钥不泄露
+        raw = json.dumps(dump, ensure_ascii=False)
+        self.assertNotIn("sk-super-secret-9876", raw)
+        self.assertIn("api_key_set", raw)
+        self.assertEqual(dump["config"]["llm_profiles"][0]["api_key_hint"], "…9876")
+
+    def test_export_is_valid_json_and_empty_safe(self):
+        call_tok(self.base, self.token, "POST", "/api/data/clear", {})
+        s, dump = call_tok(self.base, self.token, "GET", "/api/data/export")
+        self.assertEqual(s, 200)
+        self.assertEqual(dump["entries"], [])
+        self.assertEqual(dump["profiles"], [])
+        self.assertEqual(dump["reports"], [])
+
+    # --- 数据删除
+    def test_clear_removes_everything(self):
+        self.seed()
+        call_tok(self.base, self.token, "POST", "/api/reports",
+                 {"period": "week", "date": "2025-01-02", "analyze": False})
+        s, body = call_tok(self.base, self.token, "POST", "/api/data/clear", {})
+        self.assertEqual(s, 200, body)
+        self.assertTrue(body["ok"])
+        self.assertEqual(body["removed"], {"profiles": 1, "entries": 2, "reports": 1})
+        # 清空后各接口都应返回空
+        s, entries = call_tok(self.base, self.token, "GET", "/api/entries?date=2025-01-02")
+        self.assertEqual(entries["entries"], [])
+        s, profile = call_tok(self.base, self.token, "GET", "/api/profile?date=2025-01-02")
+        self.assertEqual(profile["profile"], {})
+        s, reports = call_tok(self.base, self.token, "GET", "/api/reports")
+        self.assertEqual(reports["reports"], [])
+        # 再次清除是幂等的
+        s, body = call_tok(self.base, self.token, "POST", "/api/data/clear", {})
+        self.assertEqual(body["removed"], {"profiles": 0, "entries": 0, "reports": 0})
+
+    def test_reports_can_be_deleted(self):
+        self.seed()
+        s, rep = call_tok(self.base, self.token, "POST", "/api/reports",
+                          {"period": "week", "date": "2025-01-02", "analyze": False})
+        self.assertEqual(s, 200)
+        rid = rep["id"]
+        s, _ = call_tok(self.base, self.token, "DELETE", f"/api/reports/{rid}")
+        self.assertEqual(s, 200)
+        s, body = call_tok(self.base, self.token, "GET", f"/api/reports/{rid}")
+        self.assertEqual(s, 404, body)
 
 
 if __name__ == "__main__":

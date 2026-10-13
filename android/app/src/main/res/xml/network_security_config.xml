@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 网络安全配置：默认禁止明文 HTTP，全应用只对本机回环地址放行。
+     用户自行填写的 http:// 第三方接口地址会被系统直接阻断（不会明文发送数据），
+     请填写 https:// 地址。本地服务流量不出设备，因此单独放行。 -->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="false" />
+
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="false">127.0.0.1</domain>
+        <domain includeSubdomains="false">localhost</domain>
+        <domain includeSubdomains="false">::1</domain>
+    </domain-config>
+</network-security-config>

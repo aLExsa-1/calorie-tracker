@@ -1,34 +1,70 @@
 {
-  "version": "0.3.0",
-  "date": "2026-10-13",
+  "version": "0.3.1",
+  "date": "2026-10-12",
   "items": [
-    "全新界面「森林奶油」：奶油底色、森林绿主色、石板蓝点缀，卡片更圆润",
-    "设置页新增「界面配色」，可切换森林奶油 / 海盐蓝 / 桑葚紫，立即生效并记住",
-    "每日页重做：大号热量差卡片，摄入与消耗并排，三大营养素分段条",
-    "每日明细按早餐 / 午餐 / 晚餐 / 加餐 / 运动分组，带图标与小计，可前后翻日期",
-    "记录页新增「饮食 / 运动」分段切换，草稿以卡片呈现，餐次改为下拉选择",
-    "身体数据页拆为「基础信息 / 日常与目标 / 代谢指标」，历史版本改为时间线",
-    "报告页分数加进度条；LLM 档案改为卡片，手机上更易操作",
-    "手机底部导航加图标，激活项为实心胶囊；安卓启动页与状态栏同步浅色",
-    "所有功能与数据保持不变，可直接覆盖安装升级",
-    "版本号更新为 0.3.0"
+    "新增首次启动同意页：完整阅读并勾选同意《隐私政策》与《用户协议》后才能开始使用；同意之前不向任何服务器发送您的数据",
+    "新增《隐私政策》与《用户协议》完整文档（中英文双语），设置页「隐私与协议」可随时查看",
+    "新增「数据管理」：一键导出全部数据为 JSON（不含 API Key 明文）、一键清除本机全部数据、撤回隐私政策同意",
+    "隐私政策如实写明：开发者不运营服务器、不收集个人信息；使用 AI 估算时数据会发送到你自己配置的第三方接口，请优先使用 https 地址",
+    "AI 估算草稿与报告分析加「AI 生成，仅供参考」标识；报告页与设置页加免责说明：不构成医疗建议",
+    "安卓：关闭应用数据备份，健康记录与 API Key 不再可能被 adb／云备份导出",
+    "安卓：默认禁止明文 HTTP 请求，仅对本机回环地址放行（自填的 http:// 接口会被系统阻断）",
+    "安卓：WebView 禁止加载混合内容（HTTPS 页面中的 HTTP 资源）",
+    "安卓：本地内置服务增加随机访问口令校验，设备上其他应用无法再直接调用本机接口",
+    "安卓：启用 v3 签名方案，补充英文文案与自适应图标单色层",
+    "修复：报告无法删除（新增删除报告接口）",
+    "版本号更新为 0.3.1"
   ],
   "items_en": [
-    "All-new \"Forest Cream\" look: cream background, forest-green primary, slate-blue accents, rounder cards",
-    "New Color theme in Settings: Forest cream / Sea salt blue / Mulberry plum, applied instantly and remembered",
-    "Daily page redesigned: a large calorie-balance card, intake and burn side by side, and a macro bar",
-    "Daily entries grouped by breakfast / lunch / dinner / snack / exercise, with icons and subtotals; step through dates",
-    "Log page gains a Food / Exercise switch; drafts appear as cards and meal is now a dropdown",
-    "Body data split into Basics / Lifestyle & goal / Metabolism; history shown as a timeline",
-    "Report scores get progress bars; LLM profiles are cards, easier to use on phones",
-    "Bottom tab bar now has icons with a solid pill for the active tab; Android splash and status bar match the light theme",
-    "All features and data are unchanged; install over the previous version to upgrade",
-    "Version updated to 0.3.0"
+    "New first-launch consent screen: the Privacy Policy and User Agreement must be read and accepted before use; before you agree, none of your data is sent to any server",
+    "New full Privacy Policy and User Agreement documents (bilingual), reachable any time from Settings → Privacy & terms",
+    "New Data management: export all data as JSON (without API key secrets), clear all local data in one step, and withdraw privacy consent",
+    "The Privacy Policy states plainly that the developer runs no server and collects nothing; AI estimates send data to the third-party endpoint you configure, so prefer an https address",
+    "AI estimate drafts and report analyses now carry an \"AI-generated, for reference only\" label, and reports and Settings show a disclaimer that this is not medical advice",
+    "Android: app data backup disabled, so health records and the API key can no longer be pulled out via adb or cloud backup",
+    "Android: cleartext HTTP blocked by default and allowed only for the loopback address (an http:// endpoint you enter is blocked by the system)",
+    "Android: the WebView no longer loads mixed content (HTTP resources inside HTTPS pages)",
+    "Android: the built-in local service now requires a random access token, so other apps on the device can no longer call the local API",
+    "Android: v3 signature scheme enabled, English strings and a monochrome adaptive-icon layer added",
+    "Fixed: reports could not be deleted (a delete-report endpoint was added)",
+    "Version updated to 0.3.1"
   ],
   "history": [
     {
+      "version": "0.3.1",
+      "date": "2026-10-12",
+      "items": [
+        "新增首次启动同意页：完整阅读并勾选同意《隐私政策》与《用户协议》后才能开始使用；同意之前不向任何服务器发送您的数据",
+        "新增《隐私政策》与《用户协议》完整文档（中英文双语），设置页「隐私与协议」可随时查看",
+        "新增「数据管理」：一键导出全部数据为 JSON（不含 API Key 明文）、一键清除本机全部数据、撤回隐私政策同意",
+        "隐私政策如实写明：开发者不运营服务器、不收集个人信息；使用 AI 估算时数据会发送到你自己配置的第三方接口，请优先使用 https 地址",
+        "AI 估算草稿与报告分析加「AI 生成，仅供参考」标识；报告页与设置页加免责说明：不构成医疗建议",
+        "安卓：关闭应用数据备份，健康记录与 API Key 不再可能被 adb／云备份导出",
+        "安卓：默认禁止明文 HTTP 请求，仅对本机回环地址放行（自填的 http:// 接口会被系统阻断）",
+        "安卓：WebView 禁止加载混合内容（HTTPS 页面中的 HTTP 资源）",
+        "安卓：本地内置服务增加随机访问口令校验，设备上其他应用无法再直接调用本机接口",
+        "安卓：启用 v3 签名方案，补充英文文案与自适应图标单色层",
+        "修复：报告无法删除（新增删除报告接口）",
+        "版本号更新为 0.3.1"
+      ],
+      "items_en": [
+        "New first-launch consent screen: the Privacy Policy and User Agreement must be read and accepted before use; before you agree, none of your data is sent to any server",
+        "New full Privacy Policy and User Agreement documents (bilingual), reachable any time from Settings → Privacy & terms",
+        "New Data management: export all data as JSON (without API key secrets), clear all local data in one step, and withdraw privacy consent",
+        "The Privacy Policy states plainly that the developer runs no server and collects nothing; AI estimates send data to the third-party endpoint you configure, so prefer an https address",
+        "AI estimate drafts and report analyses now carry an \"AI-generated, for reference only\" label, and reports and Settings show a disclaimer that this is not medical advice",
+        "Android: app data backup disabled, so health records and the API key can no longer be pulled out via adb or cloud backup",
+        "Android: cleartext HTTP blocked by default and allowed only for the loopback address (an http:// endpoint you enter is blocked by the system)",
+        "Android: the WebView no longer loads mixed content (HTTP resources inside HTTPS pages)",
+        "Android: the built-in local service now requires a random access token, so other apps on the device can no longer call the local API",
+        "Android: v3 signature scheme enabled, English strings and a monochrome adaptive-icon layer added",
+        "Fixed: reports could not be deleted (a delete-report endpoint was added)",
+        "Version updated to 0.3.1"
+      ]
+    },
+    {
       "version": "0.3.0",
-      "date": "2026-10-13",
+      "date": "2026-10-11",
       "items": [
         "全新界面「森林奶油」：奶油底色、森林绿主色、石板蓝点缀，卡片更圆润",
         "设置页新增「界面配色」，可切换森林奶油 / 海盐蓝 / 桑葚紫，立即生效并记住",
@@ -56,7 +92,7 @@
     },
     {
       "version": "0.2.1",
-      "date": "2026-10-13",
+      "date": "2026-10-10",
       "items": [
         "饮食记录支持上传食物图片，由 AI 识别后估算热量",
         "图片最多 4 张，每张不超过 5 MB，自动压缩后上传",
@@ -76,7 +112,7 @@
     },
     {
       "version": "0.2.0",
-      "date": "2026-10-12",
+      "date": "2026-10-09",
       "items": [
         "全新应用图标：深色底配绿橙双环，象征摄入与消耗的平衡",
         "手机窄屏下表格改为卡片，不再横向滚动",
