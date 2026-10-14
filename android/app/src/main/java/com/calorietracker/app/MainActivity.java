@@ -49,6 +49,10 @@ public class MainActivity extends AppCompatActivity {
     private static final int LOOPBACK_PORT = 8787;
 
     private static final int FILE_CHOOSER_REQUEST = 1001;
+    private static final int SAVE_JSON_REQUEST = 1002;
+
+    /** 待写入的导出内容：等待用户在系统「另存为」里选定位置后再写入。 */
+    private String pendingExportJson = null;
 
     /** 本次运行的本地服务访问口令；校验在后端 server.py 中完成。 */
     private String accessToken = "";
@@ -121,6 +125,14 @@ public class MainActivity extends AppCompatActivity {
                 return true;
             }
         });
+        // JS 桥：前端导出数据时调用 CtNative.saveJson(文件名, 内容)，由系统「另存为」保存。
+        web.addJavascriptInterface(new Object() {
+            @android.webkit.JavascriptInterface
+            public void saveJson(String filename, String content) {
+                runOnUiThread(() -> startSaveJson(filename, content));
+            }
+        }, "CtNative");
+
         web.setWebViewClient(new WebViewClient() {
             @Override
             public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
@@ -285,9 +297,50 @@ public class MainActivity extends AppCompatActivity {
         return sb.toString();
     }
 
+    /** 打开系统「另存为」，由用户选择保存位置（无需存储权限）。 */
+    private void startSaveJson(String filename, String content) {
+        pendingExportJson = content;
+        Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
+        intent.addCategory(Intent.CATEGORY_OPENABLE);
+        intent.setType("application/json");
+        intent.putExtra(Intent.EXTRA_TITLE, filename == null || filename.isEmpty()
+                ? "calorie-tracker-backup.json" : filename);
+        try {
+            startActivityForResult(intent, SAVE_JSON_REQUEST);
+        } catch (Exception e) {
+            Log.e(TAG, "无法打开保存对话框", e);
+            pendingExportJson = null;
+            toast("无法打开保存对话框：" + e.getMessage());
+        }
+    }
+
+    private void toast(String msg) {
+        android.widget.Toast.makeText(this, msg, android.widget.Toast.LENGTH_LONG).show();
+    }
+
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == SAVE_JSON_REQUEST) {
+            final String json = pendingExportJson;
+            pendingExportJson = null;
+            if (resultCode != RESULT_OK || data == null || data.getData() == null || json == null) {
+                return; // 用户取消
+            }
+            final Uri target = data.getData();
+            new Thread(() -> {
+                try (java.io.OutputStream out = getContentResolver().openOutputStream(target, "wt")) {
+                    if (out == null) throw new java.io.IOException("无法打开目标文件");
+                    out.write(json.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+                    out.flush();
+                    runOnUiThread(() -> toast("已保存导出文件"));
+                } catch (Exception e) {
+                    Log.e(TAG, "保存导出文件失败", e);
+                    runOnUiThread(() -> toast("保存失败：" + e.getMessage()));
+                }
+            }, "ct-save-json").start();
+            return;
+        }
         if (requestCode == FILE_CHOOSER_REQUEST && filePathCallback != null) {
             Uri[] results = null;
             if (resultCode == RESULT_OK && data != null) {

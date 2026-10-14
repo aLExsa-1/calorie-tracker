@@ -353,6 +353,7 @@ button.danger:hover:not(:disabled) { background: #f7d9d0; }
 .ai-block { border-left: 3px solid var(--secondary); padding-left: var(--sp-3); margin: var(--sp-2) 0; }
 .ai-badge { display: inline-block; margin: 0 0 var(--sp-3); padding: 3px 10px; border-radius: var(--r-pill); background: var(--secondary-soft); color: var(--secondary); font-size: var(--fs-xs); font-weight: 600; }
 .ai-block .ai-badge { margin-top: var(--sp-2); }
+.ai-tag { background: var(--secondary); color: #fff; font-weight: 700; letter-spacing: .02em; }
 
 /* ---------- 窄屏：底部标签栏 + 单列 ---------- */
 @media (max-width: 780px) {

@@ -349,7 +349,7 @@ Custom food & exercise library (log without AI):
 - Pick an item and "Add to draft" by servings (foods) or minutes (exercises); it then follows the same review-and-save flow as AI estimates, with exercise energy converted by duration
 - Items live only in the local SQLite file; "Export all data" and "Clear all data" cover them
 
-LLM setup (easier onboarding):
+LLM setup :
 
 - New "Provider preset": one tap fills the protocol and base URL for 13 providers — DeepSeek, Zhipu GLM, Kimi (Moonshot), Alibaba Cloud Bailian (Qwen), OpenAI, Anthropic, Google Gemini, OpenRouter, SiliconFlow, xAI, Volcano Ark (Doubao), Mistral and MiniMax
 - New "Fetch available models": queries the upstream model list via OpenAI-style `GET /models` or Anthropic-style `GET /v1/models` and lets you pick from a dropdown; a profile that is not saved yet can query with the protocol, URL and key typed in the form

@@ -178,7 +178,7 @@
       "prof.h.history": "历史版本",
       "prof.saved": "身体数据已保存",
       "prof.metaBusy": "AI 正在估算…",
-      "prof.metaResult": "AI 估算：BMR <b>{bmr}</b> kcal，维持消耗 <b>{maint}</b> kcal。依据：{basis}（模型：{llm}）。点击「保存」后生效。",
+      "prof.metaResult": "<span class=\"badge ai-tag\">AI 生成</span> AI 估算：BMR <b>{bmr}</b> kcal，维持消耗 <b>{maint}</b> kcal。依据：{basis}（模型：{llm}）。点击「保存」后生效。",
       "lang.h": "语言 / Language",
       "lang.hint": "界面语言保存在本浏览器中，切换后立即生效。",
       "lang.label": "界面语言",
@@ -344,6 +344,7 @@
 
       /* ---- AI 内容与免责标识 ---- */
       "ai.badge": "AI 生成，仅供参考",
+      "ai.tag": "AI 生成",
       "ai.disclaimer": "以上内容由 AI 生成，不构成医疗建议。如有健康问题请咨询执业医师。",
       "legal.footerDisclaimer": "热量与代谢数值由程序计算或 AI 估算，可能存在误差，不构成医疗建议。"
     },
@@ -516,7 +517,7 @@
       "prof.h.history": "Version history",
       "prof.saved": "Body data saved",
       "prof.metaBusy": "AI is estimating…",
-      "prof.metaResult": "AI estimate: BMR <b>{bmr}</b> kcal, maintenance <b>{maint}</b> kcal. Basis: {basis} (model: {llm}). Click Save to apply.",
+      "prof.metaResult": "<span class=\"badge ai-tag\">AI-generated</span> AI estimate: BMR <b>{bmr}</b> kcal, maintenance <b>{maint}</b> kcal. Basis: {basis} (model: {llm}). Click Save to apply.",
       "lang.h": "Language",
       "lang.hint": "The interface language is saved in this browser and applies immediately.",
       "lang.label": "Interface language",
@@ -682,6 +683,7 @@
 
       /* ---- AI content labelling & disclaimers ---- */
       "ai.badge": "AI-generated, for reference only",
+      "ai.tag": "AI-generated",
       "ai.disclaimer": "The content above is AI-generated and is not medical advice. Consult a physician for any health concern.",
       "legal.footerDisclaimer": "Calorie and metabolic values are computed or AI-estimated, may be inaccurate, and are not medical advice."
     }

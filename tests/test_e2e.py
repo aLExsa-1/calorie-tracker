@@ -939,6 +939,30 @@ class DataRightsAndLocalAccess(unittest.TestCase):
         self.assertEqual(dump["profiles"], [])
         self.assertEqual(dump["reports"], [])
 
+    def test_export_marks_ai_generated_content(self):
+        """导出文件必须在顶层与 AI 来源的记录上标注 AI 生成（热更新：AI 标识）。"""
+        self.seed()
+        # 再写入一条由 AI 估算（llm_name 为模型档案名）的记录
+        s, body = call_tok(self.base, self.token, "POST", "/api/entries", {
+            "date": "2025-01-03",
+            "items": [{"kind": "food", "name": "AI鸡蛋", "grams": 100, "kcal": 144,
+                       "meal": "早餐", "llm_name": "deepseek-test"}],
+        })
+        self.assertEqual(s, 201, body)
+        s, dump = call_tok(self.base, self.token, "GET", "/api/data/export")
+        self.assertEqual(s, 200)
+        # 顶层标识
+        self.assertIs(dump["ai_generated"], True)
+        self.assertIn("AI 生成", dump["ai_notice"])
+        self.assertIn("AI-GENERATED", dump["ai_notice_en"])
+        # 逐条：手工录入不标 AI，AI 估算标 AI
+        by_name = {r["name"]: r for r in dump["entries"]}
+        self.assertIs(by_name["米饭"]["ai_generated"], False)
+        self.assertIs(by_name["AI鸡蛋"]["ai_generated"], True)
+        self.assertIn("AI 生成", by_name["AI鸡蛋"]["ai_notice"])
+        self.assertNotIn("ai_notice", by_name["米饭"])
+        # 身体数据：可能含 AI 估算，给出提示
+        self.assertIs(dump["profiles"][0]["ai_may_contain"], True)
     # --- 数据删除
     def test_clear_removes_everything(self):
         self.seed()

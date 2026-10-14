@@ -260,6 +260,10 @@ function mealOptions(selected) {
     + (cur && !known ? `<option value="${esc(cur)}" selected>${esc(cur)}</option>` : "");
 }
 
+/* 条目是否由 AI 生成：llm_name 为模型档案名即为 AI；手工录入与自定义条目库为 "manual" */
+function isAiItem(it) {
+  return !!it && !!it.llm_name && it.llm_name !== "manual";
+}
 function draftRow(it, i) {
   const isAct = it.kind === "activity";
   const amount = isAct ? it.minutes : it.grams;
@@ -270,6 +274,7 @@ function draftRow(it, i) {
       <input class="ent-name" data-f="name" value="${esc(it.name)}" aria-label="${t("th.name")}">
       <div class="ent-meta">
         <span class="badge ${esc(it.kind)}">${isAct ? t("kind.activity") : t("kind.food")}</span>
+        ${isAiItem(it) ? `<span class="badge ai-tag" data-ai-tag>${t("ai.tag")}</span>` : ""}
         ${it.confidence ? `<span class="badge ${esc(it.confidence)}">${t("th.conf")} ${esc(confLabel(it.confidence))}</span>` : ""}
       </div>
     </div>
@@ -626,7 +631,7 @@ function entryRow(e) {
     ${entryIcon(e)}
     <div class="ent-main">
       <input class="ent-name" data-f="name" value="${esc(e.name)}" aria-label="${t("th.name")}">
-      <div class="ent-meta">${amount ? `<span>${amount}</span>` : ""}${macros}${e.llm_name ? `<span>${esc(e.llm_name)}</span>` : ""}</div>
+      <div class="ent-meta">${isAiItem(e) ? `<span class="badge ai-tag" data-ai-tag>${t("ai.tag")}</span>` : ""}${amount ? `<span>${amount}</span>` : ""}${macros}${e.llm_name ? `<span>${esc(e.llm_name)}</span>` : ""}</div>
     </div>
     <label class="ent-kcal"><input class="kcal-in" data-f="kcal" type="number" step="0.1" inputmode="decimal" value="${e.kcal ?? ""}" aria-label="${t("th.kcal")}">kcal</label>
     <div class="ent-actions">
@@ -1203,7 +1208,13 @@ function closeConsentGate() {
 
 /* ================= 数据管理 ================= */
 function downloadJson(filename, data) {
-  const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+  const text = JSON.stringify(data, null, 2);
+  // 安卓 WebView 不处理 blob 下载（点击无反应），改由原生桥调用系统「另存为」。
+  if (window.CtNative && typeof window.CtNative.saveJson === "function") {
+    window.CtNative.saveJson(filename, text);
+    return;
+  }
+  const blob = new Blob([text], { type: "application/json" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;

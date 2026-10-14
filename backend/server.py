@@ -79,6 +79,35 @@ def _report_or_404(store, rid: int) -> dict:
     return report
 
 
+# ---------------- AI 生成标识（导出文件） ----------------
+AI_NOTICE_ZH = "【AI 生成内容】本文件中标记为 ai_generated 的记录与分析，由用户配置的第三方大模型生成，仅供参考，不构成医疗建议。"
+AI_NOTICE_EN = "[AI-GENERATED] Records and analyses marked ai_generated were produced by a third-party LLM configured by the user. For reference only; not medical advice."
+
+
+def _mark_ai_export(payload: dict) -> dict:
+    """在导出文件顶层与每条 AI 来源记录上插入明显的 AI 生成标识。
+
+    判定规则：条目 llm_name 不是 "manual"（手工录入）即为 AI 估算生成；
+    报告 analysis 非空即为 AI 分析生成。
+    身体数据中的 BMR／维持消耗可能由 AI 估算后被用户保存，但保存的只是数值，来源无法追溯，
+    因此在 profiles 上只标注"可能含 AI 估算"，不做逐条断言。
+    """
+    out = {"ai_generated": True, "ai_notice": AI_NOTICE_ZH, "ai_notice_en": AI_NOTICE_EN, **payload}
+    for row in out.get("entries", []):
+        is_ai = (row.get("llm_name") or "manual") != "manual"
+        row["ai_generated"] = is_ai
+        if is_ai:
+            row["ai_notice"] = AI_NOTICE_ZH
+    for prof in out.get("profiles", []):
+        prof["ai_may_contain"] = True
+        prof["ai_notice"] = "BMR／维持消耗可能由 AI 估算后保存，数值来源不可追溯。"
+    for rep in out.get("reports", []):
+        has_ai = bool(rep.get("analysis"))
+        rep["ai_generated"] = has_ai
+        if has_ai:
+            rep["ai_notice"] = AI_NOTICE_ZH
+    return out
+
 # ---------------- 路由 ----------------
 def _routes(e: Engine):
     c = e.config
@@ -139,13 +168,13 @@ def _routes(e: Engine):
         ("DELETE", r"/api/reports/(\d+)", lambda m, q, b: (s.delete_report(int(m[1])), (200, {"ok": True}))[1]),
 
         # 用户权利：数据可携带（导出）与删除（清除全部本地数据）
-        ("GET", r"/api/data/export", lambda m, q, b: (200, {
+        ("GET", r"/api/data/export", lambda m, q, b: (200, _mark_ai_export({
             "app": "calorie-tracker", "version": VERSION,
             "exported_at": datetime.now().isoformat(timespec="seconds"),
             "notice": "本文件由用户主动导出，含个人健康数据；不含任何 API Key。",
             "config": c.export_view(),
             **s.export_all(),
-        })),
+        }))),
         ("POST", r"/api/data/clear", lambda m, q, b: (200, {
             "ok": True, "removed": s.clear_all(),
         })),
